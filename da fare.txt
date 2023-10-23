@@ -1,0 +1,10 @@
+
+
+
+per risolvere il problema delle fermate extraurbane e urbane, quando importo le extraurbane
+dovrò chiamare un metodo
+
+oppure potrei creare del codice che mi trova le corrispondenze trovando tra le fermate extraurbane quelle che
+hanno le ultime 3 cifre uguali ad una delle altre e sono entrambe in un range di tot metri
+creare un file txt con queste info e poi usarlo per convertire le fermate extraurbane sbagliate in giuste
+con un metodo che chiamerò quando importo le extraurbane

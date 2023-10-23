@@ -1,0 +1,12 @@
+route_id,agency_id,route_short_name,route_long_name,route_type,route_color,route_text_color
+"1021510774","888-73","201","Campiglia-Le Grazie-P.Zza Arnolfo-Gracciano-Le Caldane","3","D86018","000000"
+"1133500764","888-73","254","P.Ta Nuova-P.Za Arnolfo-Via Palestro-V .Curiel-Agrestone-V. Dei Mille","3","D86018","000000"
+"1363143319","888-73","202","P.Canonica-P.Arnolfo- Abbadia-P.Arnolfo-Agrestone- P.Arnolfo-P.Canonica","3","D86018","000000"
+"163589002","888-73","252","Abbadia - Calp - Colle P.Za Arnolfo - Scuole Medie","3","D86018","000000"
+"2081845164","888-73","259","P.Ta Nova-P.Za Arnolfo-S.Marziale-Gracciano-Le Caldane","3","D86018","000000"
+"2089714142","888-73","255","P.Zza Arnolfo-V. Palestro-P.Zza Arnolfo-P.Ta Nuova","3","D86018","000000"
+"3098870674","888-73","258","Le Caldane-Gracciano-V.Dei Mille Liceo-Piscina-P.Za Arnolfo-P.Ta Nova","3","D86018","000000"
+"3185698394","888-73","210","Intensificazione Cimitero","3","FFFFFF","000000"
+"3568515729","888-73","251","P.Za Arnolfo-Via Palestro-V.Curiel-V.Bologna-V.Dei Mille Liceo-Str.Delle Lellere","3","D86018","000000"
+"4118622779","888-73","253","V.Dei Mille Liceo-P.Zza Arnolfo-V.Della Rimembranza-Le Grazie-Campiglia","3","D86018","000000"
+"710390768","888-73","260","P.Ta Nuova-V. Bilenchi","3","D86018","000000"

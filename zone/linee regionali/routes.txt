@@ -1,0 +1,11 @@
+route_id,agency_id,route_short_name,route_long_name,route_type,route_color,route_text_color
+"1010209697","888-90","131R","Siena-/Poggibonsi Salceto/-Firenze","3","05A9C7","000000"
+"1027018557","888-90","R03","Firenze-A11-Montecatini","3","05A9C7","000000"
+"1138660693","888-90","131","Siena-Colle-Poggibonsi-Firenze","3","05A9C7","000000"
+"1155721969","888-90","50G","Grosseto - Firenze","3","05A9C7","000000"
+"1238193508","888-90","LAM PO-FI","Lam Mt Azzurra - Prato Firenze Via A11","3","05A9C7","000000"
+"142025885","888-90","R04","Firenze-A11-Pistoia","3","05A9C7","000000"
+"1424551286","888-90","138","Siena-Ambra-Monte S.Savino-Arezzo","3","05A9C7","000000"
+"1542970722","888-90","DD","Firenze-A11-Lucca","3","05A9C7","000000"
+"196791652","888-90","DM","Firenze-A11-Viareggio","3","05A9C7","000000"
+"2220449671","888-90","51G","Grosseto - Siena","3","05A9C7","000000"

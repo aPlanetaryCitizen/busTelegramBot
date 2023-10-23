@@ -1,0 +1,11 @@
+stop_files = []
+trip_files = []
+stops = []
+trips = []
+lines = []
+stops_dict = {}
+regional_stops_dict = {}
+trips_dict = {}
+lines_dict = {}
+user_locations = {}
+data = {}
