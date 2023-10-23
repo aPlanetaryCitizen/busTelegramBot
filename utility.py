@@ -4,7 +4,6 @@ import os
 import pickle
 import re
 
-import dill
 import common
 from geopy import distance
 import string
