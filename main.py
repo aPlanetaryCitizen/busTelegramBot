@@ -1719,7 +1719,8 @@ async def stops_near_user_command(update, context):
                                    [widen_radius_button], False)
         # await update.message.reply_text(f"//cerca le fermate vicino a {location}")
 
-
+async def show_favorites_command(update, context):
+    return
 async def user_location_time_check(update, message):
     user_id = update.effective_user.id
     if user_id in common.user_locations.keys():
@@ -2211,6 +2212,7 @@ def main():
     app.add_handler(CommandHandler('help', help_command))
     app.add_handler(CommandHandler('test', test_command))
     app.add_handler(CommandHandler('stopsnearme', stops_near_user_command))
+    app.add_handler(CommandHandler('showFavorites', show_favorites_command))
     # app.add_handler(CommandHandler('arrivalsHere', arrivals_near_user_command))
 
     app.add_handler(MessageHandler(filters.TEXT, handle_message))
