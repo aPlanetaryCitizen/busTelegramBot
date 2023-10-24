@@ -2201,6 +2201,7 @@ def load_data_thread():
 
 
 flask_app = Flask(__name__)
+@flask_app.route("/")
 def main():
     app = Application.builder().token(TOKEN).build()
 
@@ -2221,6 +2222,12 @@ def main():
 
     print('polling...')
     app.run_polling(poll_interval=1)
+
+    # bot = Bot(app)
+    # bot.deleteWebhook
+    #
+    # @flask_app.route('/')
+    # def webhook
 
 
 if __name__ == '__main__':
