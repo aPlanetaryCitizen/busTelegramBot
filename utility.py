@@ -9,7 +9,6 @@ from geopy import distance
 import string
 from datetime import date, datetime, timedelta
 import math
-from telegram import  Update
 from math import radians, cos, sin, asin, sqrt
 
 
