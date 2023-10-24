@@ -4,6 +4,8 @@ import os
 import pickle
 import re
 
+import pytz
+
 import common
 from geopy import distance
 import string
@@ -230,11 +232,22 @@ class Utility:
 
     @staticmethod
     def get_now_plus_deltamins(delta):
-        current_time = datetime.now()
+        current_time = Utility.get_now_at_timezone()
         delta_minutes = timedelta(minutes=delta)
         new_time = current_time + delta_minutes
         print(new_time.strftime('%H:%M:%S'))
         return new_time.strftime('%H:%M:%S')
+
+    @staticmethod
+    def get_now_at_timezone():
+        desired_timezone = pytz.timezone('Europe/Rome')
+        return datetime.now(desired_timezone)
+
+    @staticmethod
+    def get_now_at_timezone_str():
+        desired_timezone = pytz.timezone('Europe/Rome')
+        now = datetime.now(desired_timezone)
+        return now.strftime('%H:%M:%S')
 
 
     @staticmethod

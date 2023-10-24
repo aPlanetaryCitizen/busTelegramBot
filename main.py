@@ -130,7 +130,7 @@ def start():
     #     print(fermata.to_text())
 
     print('importing trips...')
-    print(datetime.now().time())
+    print(Utility.get_now_at_timezone().time())
     # import_trips()
 
     data_file_path = "data.pickle"
@@ -1099,7 +1099,7 @@ async def save_user_location(update, context):
         print(f"current position: {current_pos}")
         common.user_locations[user_id] = {
             'location': current_pos,
-            'update_time': datetime.now()
+            'update_time': Utility.get_now_at_timezone()
         }
     else:
         message = update.message
@@ -1318,7 +1318,7 @@ def format_trip_results(results_dict):
 
     formatted_string = f"Fermata {results_dict['stop_id']}, {results_dict['stop_name']}\n" \
                        f"Bus in transito dalle {results_dict['start_time']} alle {results_dict['end_time']}\n\n"
-    now = Utility.get_now_plus_deltamins(0)
+    now = Utility.get_now_at_timezone_str()
     stamped_now_line = False
 
     for i, trip in enumerate(results_dict['trips']):
@@ -1723,7 +1723,7 @@ async def stops_near_user_command(update, context):
 async def user_location_time_check(update, message):
     user_id = update.effective_user.id
     if user_id in common.user_locations.keys():
-        time_since_update = datetime.now() - common.user_locations[user_id]['update_time']
+        time_since_update = Utility.get_now_at_timezone() - common.user_locations[user_id]['update_time']
     else:
         print('no updates for this user id')
         return
