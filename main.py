@@ -24,6 +24,7 @@ from datetime import *
 from telegram import ReplyKeyboardMarkup, KeyboardButton
 from math import radians, cos, sin, asin, sqrt
 import uuid
+from flask import Flask, request
 
 # from aiogram import Dispatcher, Bot, executor, types
 # from aiogram.types import ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton
@@ -2199,48 +2200,10 @@ def load_data_thread():
         print('Data not available yet.')
 
 
-if __name__ == '__main__':
+flask_app = Flask(__name__)
+def main():
     app = Application.builder().token(TOKEN).build()
 
-    # # BUONO
-    # if os.path.isfile('data.pickle'):
-    #     print('Data found.\nLoading data...')
-    #
-    #
-    #     tempo_inizio = time.time()  # Memorizza il tempo di inizio dell'operazione
-    #
-    #     load_thread = threading.Thread(target=load_data_thread)
-    #     load_thread.start()
-    #
-    #     while load_thread.is_alive():
-    #         tempo_passato = int(time.time() - tempo_inizio)
-    #         print(f'Waiting... Tempo trascorso: {tempo_passato} secondi')
-    #         time.sleep(2)  # Pausa di 1 secondo prima di effettuare il controllo successivo
-    #
-    #     load_thread.join()  # Attendere il completamento del thread di caricamento
-    # # ^^^^^^^^^^
-    # # BUONO
-
-    # if os.path.isfile('data.pickle'):
-    #     print('Data found.\nLoading data...')
-    #     tempo_inizio = time.time()  # Memorizza il tempo di inizio dell'operazione
-    #
-    #     while True:
-    #         # if time.time() - tempo_inizio >= 10:  # Imposta il tempo massimo di attesa a 10 secondi
-    #         #     print('Tempo massimo di attesa raggiunto senza completare l\'operazione.')
-    #         #     break
-    #
-    #         data = Utility.load_data('data.pickle')
-    #         if data:
-    #             common.stops, common.trips, common.lines = data["liste"]
-    #             common.regional_stops_dict = data["dizionari"]
-    #             update_dicts()
-    #             print('Operazione completata!')
-    #             break
-    #         else:
-    #             print('Data not available yet. Waiting...')
-    #             sys.stdout.flush()
-    #             time.sleep(1)  # Pausa di 1 secondo prima di effettuare il controllo successivo
     if not os.path.isfile('bot.db'):
         start()
 
@@ -2258,3 +2221,69 @@ if __name__ == '__main__':
 
     print('polling...')
     app.run_polling(poll_interval=1)
+
+
+if __name__ == '__main__':
+
+    main()
+
+    # app = Application.builder().token(TOKEN).build()
+    #
+    # # # BUONO
+    # # if os.path.isfile('data.pickle'):
+    # #     print('Data found.\nLoading data...')
+    # #
+    # #
+    # #     tempo_inizio = time.time()  # Memorizza il tempo di inizio dell'operazione
+    # #
+    # #     load_thread = threading.Thread(target=load_data_thread)
+    # #     load_thread.start()
+    # #
+    # #     while load_thread.is_alive():
+    # #         tempo_passato = int(time.time() - tempo_inizio)
+    # #         print(f'Waiting... Tempo trascorso: {tempo_passato} secondi')
+    # #         time.sleep(2)  # Pausa di 1 secondo prima di effettuare il controllo successivo
+    # #
+    # #     load_thread.join()  # Attendere il completamento del thread di caricamento
+    # # # ^^^^^^^^^^
+    # # # BUONO
+    #
+    # # if os.path.isfile('data.pickle'):
+    # #     print('Data found.\nLoading data...')
+    # #     tempo_inizio = time.time()  # Memorizza il tempo di inizio dell'operazione
+    # #
+    # #     while True:
+    # #         # if time.time() - tempo_inizio >= 10:  # Imposta il tempo massimo di attesa a 10 secondi
+    # #         #     print('Tempo massimo di attesa raggiunto senza completare l\'operazione.')
+    # #         #     break
+    # #
+    # #         data = Utility.load_data('data.pickle')
+    # #         if data:
+    # #             common.stops, common.trips, common.lines = data["liste"]
+    # #             common.regional_stops_dict = data["dizionari"]
+    # #             update_dicts()
+    # #             print('Operazione completata!')
+    # #             break
+    # #         else:
+    # #             print('Data not available yet. Waiting...')
+    # #             sys.stdout.flush()
+    # #             time.sleep(1)  # Pausa di 1 secondo prima di effettuare il controllo successivo
+    # if not os.path.isfile('bot.db'):
+    #     start()
+    #
+    # app.add_handler(CommandHandler('start', start_command))
+    # app.add_handler(CommandHandler('help', help_command))
+    # app.add_handler(CommandHandler('test', test_command))
+    # app.add_handler(CommandHandler('stopsnearme', stops_near_user_command))
+    # # app.add_handler(CommandHandler('arrivalsHere', arrivals_near_user_command))
+    #
+    # app.add_handler(MessageHandler(filters.TEXT, handle_message))
+    # app.add_handler(CallbackQueryHandler(button_command))
+    # app.add_handler(MessageHandler(filters.LOCATION, save_user_location))
+    #
+    # app.add_error_handler(error)
+    #
+    # print('polling...')
+    # app.run_polling(poll_interval=1)
+
+
