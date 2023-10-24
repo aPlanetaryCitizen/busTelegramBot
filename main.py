@@ -2,7 +2,6 @@ from typing import Final, List
 from fermata import Fermata
 from utility import Utility
 from trip import Trip
-from telegram import Update
 from telegram.ext import *
 from geopy import *
 import difflib
