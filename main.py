@@ -905,6 +905,19 @@ async def button_command(update: Update, context: ContextTypes.context):
                 if query_descr_array[1] == 'arrivals':
                     stop = ricerca_stop_per_id(query_args[0])
                     await show_arrivals(query.message, stop, query_args[1], True)
+                elif query_descr_array[1] == 'favorites':
+                    user_id = query_args[0]
+                    stop_id = query_args[1]
+
+                    if not Utility.is_stop_favorite(user_id, stop_id):
+                        Utility.add_favorite_stop_to_db(user_id, stop_id)
+                        await update.get_bot().sendMessage(update.effective_chat.id, f"Ho aggiunto la fermata con id {stop_id} ai tuoi preferiti.")
+                        print(f"stop {stop_id} ADDED to favorites for user {user_id}")
+                    else:
+                        await update.get_bot().sendMessage(update.effective_chat.id, f"La fermata con id {stop_id} è già tra i tuoi preferiti.")
+                        print(f"stop {stop_id} ALREADY a favourite for user {user_id}")
+
+
 
                 # keyboard = InlineKeyboardMarkup([[widen_radius_button]])
                 # await query.message.reply_text('premi qua per allargare la ricerca', reply_markup=keyboard)
@@ -920,34 +933,38 @@ async def button_command(update: Update, context: ContextTypes.context):
                 reply_markup = query.message.reply_markup
                 buttons = []
                 for row in reply_markup.inline_keyboard:
-                    for button in row:
-                        buttons.append([button])
-                        print(f"button: {button.text}")
+                    buttons.append(row)
+                    # for button in row:
+                    #     print(f"button: {button.text}")
                 buttons = buttons[:-1]
-                stops = []
+                stops = common.data[query_arg][1]
                 # await query.edit_message_reply_markup(reply_markup=InlineKeyboardMarkup(buttons))
                 text = common.data[query_arg][0]
-                stop_ids = common.data[query_arg][1].split(';')
+                # stop_ids = common.data[query_arg][1].split(';')
 
-                for id in stop_ids:
-                    stops.append(ricerca_stop_per_id(id))
+                # for id in stop_ids:
+                #     stops.append(ricerca_stop_per_id(id))
+                # await show_stops_with_overflow(stops, [], query.message)
+                # //////
+
                 stops_to_show = stops[:default_num_of_stops_to_show_on_search]
+                print(f"STOPS {len(stops_to_show)}")
                 remaining_stops = stops[default_num_of_stops_to_show_on_search:]
                 for stop in stops_to_show:
                     buttons.append([InlineKeyboardButton(f"{stop.to_text()}",
                                                          callback_data=f"stop{callback_main_divider}{stop.id}")])
                 if len(remaining_stops) > 0:
-                    ids = ''
-                    for stop in remaining_stops:
-                        ids += f"{stop.id};"
-                    ids = ids.strip()[:-1]
-                    print(f"moreStops_{ids}")
+                    # ids = ''
+                    # for stop in remaining_stops:
+                    #     ids += f"{stop.id};"
+                    # ids = ids.strip()[:-1]
+                    # print(f"moreStops_{ids}")
                     dati_id = str(uuid.uuid4())
                     if len(common.data[query_arg]) > 2:
                         buttons_to_add = common.data[query_arg][2]
-                        common.data[dati_id] = (text, ids, buttons_to_add)
+                        common.data[dati_id] = (text, remaining_stops, buttons_to_add)
                     else:
-                        common.data[dati_id] = (text, ids)
+                        common.data[dati_id] = (text, remaining_stops)
                     more_stops_button = InlineKeyboardButton("...",
                                                              callback_data=f"moreStops{callback_main_divider}{dati_id}")
                     buttons.append([more_stops_button])
@@ -956,6 +973,7 @@ async def button_command(update: Update, context: ContextTypes.context):
                         buttons_to_add = common.data[query_arg][2]
                         buttons.append(buttons_to_add)
                 await query.edit_message_reply_markup(reply_markup=InlineKeyboardMarkup(buttons))
+                # /////////
             elif query_descr == 'stopsAtUserInRadius':
                 if await has_user_shared_location(update, query.message):
                     await user_location_time_check(update, query.message)
@@ -973,6 +991,88 @@ async def button_command(update: Update, context: ContextTypes.context):
                         await respond_to_stops(update, query.message, stops,
                                                f"Fermate entro {int(radius)} metri dalla tua posizione:",
                                                [widen_radius_button], False)
+            elif query_descr == 'sortAlpha':
+                stops_to_sort = common.data[query_arg]
+                sorted_stops = Utility.sort_stops_alpha(stops_to_sort)
+                dati_id = str(uuid.uuid4())
+                common.data[dati_id] = sorted_stops
+                buttons = [[]]
+
+                sort_by_name_button = InlineKeyboardButton(f"sort by name",
+                                                           callback_data=f"sortAlpha{callback_main_divider}{dati_id}")
+                sort_by_position_button = InlineKeyboardButton(f"sort by position",
+                                                               callback_data=f"sortGeo{callback_main_divider}{dati_id}")
+                buttons.append([sort_by_name_button, sort_by_position_button])
+                if len(sorted_stops) > default_num_of_stops_to_show_on_search:
+                    stops_to_show = sorted_stops[:default_num_of_stops_to_show_on_search]
+                    remaining_stops = sorted_stops[default_num_of_stops_to_show_on_search:]
+                    for stop in stops_to_show:
+                        buttons.append(
+                            [InlineKeyboardButton(f"{stop.to_text()}",
+                                                  callback_data=f"stop{callback_main_divider}{stop.id}")])
+                    if len(remaining_stops) > 0:
+                        dati_id = str(uuid.uuid4())
+                        common.data[dati_id] = (".", remaining_stops)
+                        more_stops_button = InlineKeyboardButton("...",
+                                                                 callback_data=f"moreStops{callback_main_divider}{dati_id}")
+                        buttons.append([more_stops_button])
+                    keyboard = InlineKeyboardMarkup(buttons)
+                    await query.message.edit_text(f"Fermate preferite:", reply_markup=keyboard)
+                else:
+                    for stop in sorted_stops:
+                        buttons.append(
+                            [InlineKeyboardButton(f"{stop.to_text()}",
+                                                  callback_data=f"stop{callback_main_divider}{stop.id}")])
+                    keyboard = InlineKeyboardMarkup(buttons)
+                    await query.message.edit_text(f"Fermate preferite:", reply_markup=keyboard)
+            elif query_descr == 'sortGeo':
+                if await has_user_shared_location(update, update.message):
+                    lat = common.user_locations[update.effective_user.id]['location'][0]
+                    lon = common.user_locations[update.effective_user.id]['location'][1]
+                    stops_to_sort = common.data[query_arg]
+                    sorted_stops = Utility.sort_stops_by_dist_to(stops_to_sort, lat, lon)
+                    dati_id = str(uuid.uuid4())
+                    common.data[dati_id] = sorted_stops
+                    buttons = [[]]
+                    sort_by_name_button = InlineKeyboardButton(f"sort by name",
+                                                               callback_data=f"sortAlpha{callback_main_divider}{dati_id}")
+                    sort_by_position_button = InlineKeyboardButton(f"sort by position",
+                                                                   callback_data=f"sortGeo{callback_main_divider}{dati_id}")
+                    buttons.append([sort_by_name_button, sort_by_position_button])
+                    if len(sorted_stops) > default_num_of_stops_to_show_on_search:
+                        stops_to_show = sorted_stops[:default_num_of_stops_to_show_on_search]
+                        remaining_stops = sorted_stops[default_num_of_stops_to_show_on_search:]
+                        for stop in stops_to_show:
+                            buttons.append(
+                                [InlineKeyboardButton(f"{stop.to_text()}",
+                                                      callback_data=f"stop{callback_main_divider}{stop.id}")])
+                        if len(remaining_stops) > 0:
+                            dati_id = str(uuid.uuid4())
+                            common.data[dati_id] = (".", remaining_stops)
+                            more_stops_button = InlineKeyboardButton("...",
+                                                                     callback_data=f"moreStops{callback_main_divider}{dati_id}")
+                            buttons.append([more_stops_button])
+                        keyboard = InlineKeyboardMarkup(buttons)
+                        await query.message.edit_text(f"Fermate preferite:", reply_markup=keyboard)
+                    else:
+                        for stop in sorted_stops:
+                            buttons.append(
+                                [InlineKeyboardButton(f"{stop.to_text()}",
+                                                      callback_data=f"stop{callback_main_divider}{stop.id}")])
+                        keyboard = InlineKeyboardMarkup(buttons)
+                        await query.message.edit_text(f"Fermate preferite:", reply_markup=keyboard)
+                else:
+                    await query.message.reply_text(f"Per usare questa funzione ho bisogno che tu mi dia accesso alla posizione. "
+                                        f"Se non l'hai già fatto premi l'icona di condivisione, "
+                                        f"scegli 'posizione' e poi 'posizione in tempo reale', se invece l'hai "
+                                        f"già fatto riprova tra qualche secondo.")
+
+
+
+
+
+
+
             # elif query_descr == 'widenAtUserInRadius':
             #     user_id = update.effective_user.id
             #     lat = common.user_locations[user_id]['location'][0]
@@ -1054,13 +1154,18 @@ async def button_command(update: Update, context: ContextTypes.context):
                                                                            f"{callback_main_divider}{stop.latitude}"
                                                                            f"{callback_arg_divider}{stop.longitude}"
                                                                            f"{callback_arg_divider}{default_search_radius}")
+                    add_to_favorites_button = InlineKeyboardButton(f"add to favorites", callback_data=f"stop{callback_command_divider}"
+                                                                                                      f"favorites{callback_main_divider}"
+                                                                                                      f"{update.effective_user.id}{callback_arg_divider}"
+                                                                                                      f"{stop.id}")
                     stop_user_commands = InlineKeyboardButton(f"stop_commands",
                                                               callback_data=f"stop{callback_command_divider}"
                                                                             f"commands{callback_main_divider}{stop.id}")
                     arrivals_command = InlineKeyboardButton(f"bus in arrivo",
                                                             callback_data=f"stop{callback_command_divider}"
                                                                           f"arrivals{callback_main_divider}{stop.id}{callback_arg_divider}0")
-                    buttons = [old_buttons[0], [info_button, to_here_button], [near_stops_button, arrivals_command]]
+
+                    buttons = [old_buttons[0], [info_button, to_here_button], [near_stops_button, add_to_favorites_button]]
                     # for button in buttons_to_add:
                     #     buttons.append([button])
                     keyboard = InlineKeyboardMarkup(buttons)
@@ -1306,6 +1411,34 @@ def ricerca_trip_per_fermata_data_tempo(stop_id, date, start_time, end_time):
         results_dict['end_time'] = end_time
 
     return results_dict
+
+def new_button(text, query_descr, query_args):
+    callback = ''
+    if len(query_descr) == 0:
+        print("ERROR in button, no query descr")
+        return
+    if len(query_args) == 0:
+        print("ERROR in button, no query args")
+        return
+    if len(query_descr) >= 1:
+        for i, descr in enumerate(query_descr):
+            if i == 0:
+                callback += f"{descr}"
+            else:
+                callback += f"{callback_command_divider}{descr}"
+    callback += f"{callback_main_divider}"
+    if len(query_args) >= 1:
+        for i, arg in enumerate(query_args):
+            if i == 0:
+                callback += f"{arg}"
+            else:
+                callback += f"{callback_arg_divider}{arg}"
+
+    return InlineKeyboardButton(text, callback_data=callback)
+
+def new_stop_button(stop_id):
+    stop = ricerca_stop_per_id(stop_id)
+    return new_button(f"{stop.id}  {stop.name}", [f"stop"], [stop_id])
 
 
 def format_trip_results(results_dict):
@@ -1720,7 +1853,60 @@ async def stops_near_user_command(update, context):
         # await update.message.reply_text(f"//cerca le fermate vicino a {location}")
 
 async def show_favorites_command(update, context):
-    return
+    user_id = update.effective_user.id
+    fav_ids = Utility.get_fav_stop_ids(user_id)
+    fav_stops = []
+    for fav_id in fav_ids:
+        fav_stops.append(ricerca_stop_per_id(fav_id))
+
+    dati_id = str(uuid.uuid4())
+    common.data[dati_id] = fav_stops
+
+    if await has_user_shared_location(update, update.message):
+        lat = common.user_locations[update.effective_user.id]['location'][0]
+        lon = common.user_locations[update.effective_user.id]['location'][1]
+        fav_stops = Utility.sort_stops_by_dist_to(fav_stops, lat, lon)
+
+    buttons = [[]]
+
+    # sort_by_name_button = InlineKeyboardButton(f"sort by name", callback_data=f"sortAlpha{callback_main_divider}{dati_id}")
+    sort_by_name_button = new_button(f"sortByName", [f"sortAlpha"], [dati_id])
+    sort_by_position_button = new_button(f"sortByPos", [f"sortGeo"], [dati_id])
+    buttons.append([sort_by_name_button, sort_by_position_button])
+
+    await show_stops_with_overflow(fav_stops, buttons, update.message)
+        # await respond_to_found_stops(update, message, stops_to_show, text, search_str)
+
+
+    # for stop in fav_stops:
+    #     buttons.append([InlineKeyboardButton(f"{stop.to_text()}", callback_data=f"stop{callback_main_divider}{stop.id}")])
+    # await update.message.reply_text(f"Fermate preferite:", reply_markup=InlineKeyboardMarkup(buttons))
+
+
+
+    # await respond_to_stops(update, update.message, fav_stops, f"Fermate preferite:", [], False)
+
+async def show_stops_with_overflow(stops, buttons, message):
+    if len(stops) > default_num_of_stops_to_show_on_search:
+        stops_to_show = stops[:default_num_of_stops_to_show_on_search]
+        remaining_stops = stops[default_num_of_stops_to_show_on_search:]
+        for stop in stops_to_show:
+            buttons.append(
+                [new_stop_button(stop.id)])
+        if len(remaining_stops) > 0:
+            dati_id = str(uuid.uuid4())
+            common.data[dati_id] = (".", remaining_stops)
+            more_stops_button = new_button("...", [f"moreStops"], [dati_id])
+            buttons.append([more_stops_button])
+        keyboard = InlineKeyboardMarkup(buttons)
+        await message.reply_text(f"Fermate preferite:", reply_markup=keyboard)
+    else:
+        for stop in stops:
+            buttons.append(
+                [new_stop_button(stop.id)])
+        keyboard = InlineKeyboardMarkup(buttons)
+        await message.reply_text(f"Fermate preferite:", reply_markup=keyboard)
+
 async def user_location_time_check(update, message):
     user_id = update.effective_user.id
     if user_id in common.user_locations.keys():
@@ -1779,12 +1965,12 @@ async def respond_to_found_stops(update, message, stops, text, search_str):
             buttons.append(
                 [InlineKeyboardButton(f"{stop.to_text()}", callback_data=f"stop{callback_main_divider}{stop.id}")])
         if len(remaining_stops) > 0:
-            for stop in remaining_stops:
-                ids += f"{stop.id};"
-            ids = ids.strip()[:-1]
-            print(f"moreStops_{ids}")
+            # for stop in remaining_stops:
+            #     ids += f"{stop.id};"
+            # ids = ids.strip()[:-1]
+            # print(f"moreStops_{ids}")
             dati_id = str(uuid.uuid4())
-            common.data[dati_id] = (text, ids)
+            common.data[dati_id] = (text, remaining_stops)
             more_stops_button = InlineKeyboardButton("...", callback_data=f"moreStops{callback_main_divider}{dati_id}")
             buttons.append([more_stops_button])
         keyboard = InlineKeyboardMarkup(buttons)
@@ -1800,6 +1986,8 @@ async def respond_to_found_stops(update, message, stops, text, search_str):
 
 
 async def respond_to_stops(update, message, stops, text, buttons_to_add, should_edit_latest_message):
+
+    #///////////////////////////////////////////////////////////////
     num_of_stops_to_show = 0
     if should_edit_latest_message:
         num_of_stops_shown = len(message.reply_markup.inline_keyboard)
@@ -1812,14 +2000,11 @@ async def respond_to_stops(update, message, stops, text, buttons_to_add, should_
         stops_to_show = stops[:num_of_stops_to_show]
         remaining_stops = stops[num_of_stops_to_show:]
         if len(remaining_stops) > 0:
-            for stop in remaining_stops:
-                remaining_stops_ids += f"{stop.id};"
-            remaining_stops_ids = remaining_stops_ids.strip()[:-1]
-            print(f"moreStops_{remaining_stops_ids}")
+            # print(f"moreStops_{remaining_stops_ids}")
             dati_id = str(uuid.uuid4())
-            common.data[dati_id] = (text, remaining_stops_ids, buttons_to_add)
+            common.data[dati_id] = (text, remaining_stops, buttons_to_add)
             more_stops_button = InlineKeyboardButton("...", callback_data=f"moreStops{callback_main_divider}{dati_id}")
-            await respond_to_stops(update, message, stops_to_show, text, [more_stops_button], True)
+            await respond_to_stops(update, message, stops_to_show, text, [more_stops_button], False)
         else:
             await respond_to_stops(update, message, stops_to_show, text, [], True)
 
@@ -1880,6 +2065,7 @@ async def respond_to_stops(update, message, stops, text, buttons_to_add, should_
                                  reply_markup=keyboard)
     else:
         pass
+    #//////////////////////////////////////////////////
 
 
 async def show_arrivals(message, stop, delta_minutes, should_edit_latest_message):
@@ -1946,11 +2132,14 @@ async def show_arrivals(message, stop, delta_minutes, should_edit_latest_message
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    if not Utility.check_user_id_exists(user_id):
+        Utility.insert_user_id(user_id)
     message_type: str = update.message.chat.type
     text: str = update.message.text
     print(update.message.location)
 
-    print(f'User ({update.message.chat.id}) in {message_type}: "{text}"')
+    print(f'User id: "{user_id}", chat id: "{update.message.chat.id}" in {message_type}: "{text}"')
 
     if message_type == 'group':
         return
@@ -2199,6 +2388,30 @@ def load_data_thread():
     else:
         print('Data not available yet.')
 
+def build_user_data_db():
+    conn = sqlite3.connect('userData.db')  # Crea o connettiti a un database esistente
+    cursor = conn.cursor()
+
+    # Crea la tabella per memorizzare i codici utente
+    cursor.execute('''
+            CREATE TABLE IF NOT EXISTS user_ids (
+                user_id TEXT PRIMARY KEY
+            )
+        ''')
+
+    # Crea la tabella per memorizzare le fermate preferite degli utenti
+    cursor.execute('''
+            CREATE TABLE IF NOT EXISTS favorite_stops (
+                user_id TEXT,
+                favorite_stop_id TEXT,
+                FOREIGN KEY (user_id) REFERENCES user_ids (user_id)
+            )
+        ''')
+
+    # Esegui il commit delle modifiche e chiudi la connessione
+    conn.commit()
+    conn.close()
+
 
 flask_app = Flask(__name__)
 @flask_app.route("/")
@@ -2207,12 +2420,14 @@ def main():
 
     if not os.path.isfile('bot.db'):
         start()
+    if not os.path.isfile('userData.db'):
+        build_user_data_db()
 
     app.add_handler(CommandHandler('start', start_command))
     app.add_handler(CommandHandler('help', help_command))
     app.add_handler(CommandHandler('test', test_command))
     app.add_handler(CommandHandler('stopsnearme', stops_near_user_command))
-    app.add_handler(CommandHandler('showFavorites', show_favorites_command))
+    app.add_handler(CommandHandler('showfavorites', show_favorites_command))
     # app.add_handler(CommandHandler('arrivalsHere', arrivals_near_user_command))
 
     app.add_handler(MessageHandler(filters.TEXT, handle_message))
