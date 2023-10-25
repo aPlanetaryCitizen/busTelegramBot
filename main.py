@@ -905,18 +905,41 @@ async def button_command(update: Update, context: ContextTypes.context):
                 if query_descr_array[1] == 'arrivals':
                     stop = ricerca_stop_per_id(query_args[0])
                     await show_arrivals(query.message, stop, query_args[1], True)
-                elif query_descr_array[1] == 'favorites':
+                elif query_descr_array[1] == 'addFav':
                     user_id = query_args[0]
                     stop_id = query_args[1]
-
+                    remove_from_favorites_button = new_button(f"remove favorite", [f"stop", f"removeFav"],
+                                                              [update.effective_user.id, stop_id])
+                    await edit_clicked_button(query, remove_from_favorites_button)
+                    # button_keyboard = get_buttonKeyboard_from_reply_markup(query.message.reply_markup)
+                    # for i, row in enumerate(button_keyboard):
+                    #     for j, button in enumerate(row):
+                    #         if button.callback_data == query.data:
+                    #             remove_from_favorites_button = new_button(f"remove favorite", [f"stop", f"removeFav"],
+                    #                                                       [update.effective_user.id, stop_id])
+                    #             button_keyboard[i][j] = remove_from_favorites_button
+                    # await query.edit_message_reply_markup(InlineKeyboardMarkup(button_keyboard))
                     if not Utility.is_stop_favorite(user_id, stop_id):
                         Utility.add_favorite_stop_to_db(user_id, stop_id)
-                        await update.get_bot().sendMessage(update.effective_chat.id, f"Ho aggiunto la fermata con id {stop_id} ai tuoi preferiti.")
+                        await update.get_bot().sendMessage(update.effective_chat.id, f"Ho AGGIUNTO la fermata con id {stop_id} ai tuoi preferiti.")
                         print(f"stop {stop_id} ADDED to favorites for user {user_id}")
                     else:
                         await update.get_bot().sendMessage(update.effective_chat.id, f"La fermata con id {stop_id} è già tra i tuoi preferiti.")
                         print(f"stop {stop_id} ALREADY a favourite for user {user_id}")
-
+                elif query_descr_array[1] == 'removeFav':
+                    user_id = query_args[0]
+                    stop_id = query_args[1]
+                    add_to_fav_button = new_button(f"add favorite", [f"stop", f"addFav"],
+                                                   [update.effective_user.id, stop_id])
+                    await edit_clicked_button(query, add_to_fav_button)
+                    if Utility.is_stop_favorite(user_id, stop_id):
+                        Utility.remove_favorite_stop(user_id, stop_id)
+                        await update.get_bot().sendMessage(update.effective_chat.id, f"Ho RIMOSSO la fermata con id {stop_id} dai tuoi preferiti.")
+                        print(f"stop {stop_id} REMOVED from favorites for user {user_id}")
+                    else:
+                        await update.get_bot().sendMessage(update.effective_chat.id,
+                                                           f"La fermata con id {stop_id} non è tra i tuoi preferiti.")
+                        print(f"stop {stop_id} NOT a favourite for user {user_id}")
 
 
                 # keyboard = InlineKeyboardMarkup([[widen_radius_button]])
@@ -1137,7 +1160,7 @@ async def button_command(update: Update, context: ContextTypes.context):
                 elif query_descr_array[1] == 'altro':
                     stop = ricerca_stop_per_id(query_arg)
                     message = query.message
-                    old_buttons = get_buttons_from_reply_markup(message.reply_markup)
+                    old_buttons = get_buttonKeyboard_from_reply_markup(message.reply_markup)
                     for row in old_buttons:
                         for button in row:
                             if button.text == 'altro':
@@ -1154,8 +1177,10 @@ async def button_command(update: Update, context: ContextTypes.context):
                                                                            f"{callback_main_divider}{stop.latitude}"
                                                                            f"{callback_arg_divider}{stop.longitude}"
                                                                            f"{callback_arg_divider}{default_search_radius}")
+
+                    remove_from_favorites_button = new_button(f"remove favorite", [f"stop", f"removeFav"], [update.effective_user.id, stop.id])
                     add_to_favorites_button = InlineKeyboardButton(f"add to favorites", callback_data=f"stop{callback_command_divider}"
-                                                                                                      f"favorites{callback_main_divider}"
+                                                                                                      f"addFav{callback_main_divider}"
                                                                                                       f"{update.effective_user.id}{callback_arg_divider}"
                                                                                                       f"{stop.id}")
                     stop_user_commands = InlineKeyboardButton(f"stop_commands",
@@ -1165,7 +1190,11 @@ async def button_command(update: Update, context: ContextTypes.context):
                                                             callback_data=f"stop{callback_command_divider}"
                                                                           f"arrivals{callback_main_divider}{stop.id}{callback_arg_divider}0")
 
-                    buttons = [old_buttons[0], [info_button, to_here_button], [near_stops_button, add_to_favorites_button]]
+                    buttons = [old_buttons[0], [info_button, to_here_button]]
+                    if Utility.is_stop_favorite(update.effective_user.id, stop.id):
+                        buttons.append([near_stops_button, remove_from_favorites_button])
+                    else:
+                        buttons.append([near_stops_button, add_to_favorites_button])
                     # for button in buttons_to_add:
                     #     buttons.append([button])
                     keyboard = InlineKeyboardMarkup(buttons)
@@ -1191,6 +1220,15 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 #         text="Per abilitare le funzioni ",
 #         reply_markup=reply_markup
 #     )
+
+async def edit_clicked_button(query, new_button):
+    button_keyboard = get_buttonKeyboard_from_reply_markup(query.message.reply_markup)
+    for i, row in enumerate(button_keyboard):
+        for j, button in enumerate(row):
+            if button.callback_data == query.data:
+                button_keyboard[i][j] = new_button
+    await query.edit_message_reply_markup(InlineKeyboardMarkup(button_keyboard))
+
 
 async def save_user_location(update, context):
     user_id = update.effective_user.id
@@ -1315,7 +1353,7 @@ def format_stop_details(caratteristiche):
 
 
 # Funzione per ottenere i pulsanti da un oggetto reply_markup
-def get_buttons_from_reply_markup(reply_markup):
+def get_buttonKeyboard_from_reply_markup(reply_markup):
     if reply_markup is not None and isinstance(reply_markup, InlineKeyboardMarkup):
         inline_keyboard = reply_markup.inline_keyboard
         buttons = [list(row) for row in inline_keyboard]
@@ -1874,7 +1912,7 @@ async def show_favorites_command(update, context):
     sort_by_position_button = new_button(f"sortByPos", [f"sortGeo"], [dati_id])
     buttons.append([sort_by_name_button, sort_by_position_button])
 
-    await show_stops_with_overflow(fav_stops, buttons, update.message)
+    await show_fav_stops(fav_stops, buttons, update.message, user_id)
         # await respond_to_found_stops(update, message, stops_to_show, text, search_str)
 
 
@@ -1886,11 +1924,12 @@ async def show_favorites_command(update, context):
 
     # await respond_to_stops(update, update.message, fav_stops, f"Fermate preferite:", [], False)
 
-async def show_stops_with_overflow(stops, buttons, message):
+async def show_fav_stops(stops, buttons, message, user_id):
     if len(stops) > default_num_of_stops_to_show_on_search:
         stops_to_show = stops[:default_num_of_stops_to_show_on_search]
         remaining_stops = stops[default_num_of_stops_to_show_on_search:]
         for stop in stops_to_show:
+            # remove_from_fav_button = new_button(f"X", [f"stop", f"removeFav"], [user_id, stop.id])
             buttons.append(
                 [new_stop_button(stop.id)])
         if len(remaining_stops) > 0:
@@ -2079,7 +2118,7 @@ async def show_arrivals(message, stop, delta_minutes, should_edit_latest_message
         print(arrivi_text)
         if len(arrivi_text) > 0:
             buttons = [[]]
-            old_buttons = get_buttons_from_reply_markup(message.reply_markup)
+            old_buttons = get_buttonKeyboard_from_reply_markup(message.reply_markup)
             print(old_buttons)
             for old_row in old_buttons:
                 row = []
