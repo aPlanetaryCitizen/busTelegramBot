@@ -1,4 +1,6 @@
 from typing import Final, List
+
+
 from fermata import Fermata
 from utility import Utility
 from trip import Trip
@@ -921,10 +923,10 @@ async def button_command(update: Update, context: ContextTypes.context):
                     # await query.edit_message_reply_markup(InlineKeyboardMarkup(button_keyboard))
                     if not Utility.is_stop_favorite(user_id, stop_id):
                         Utility.add_favorite_stop_to_db(user_id, stop_id)
-                        await update.get_bot().sendMessage(update.effective_chat.id, f"Ho AGGIUNTO la fermata con id {stop_id} ai tuoi preferiti.")
+                        await update.get_bot().sendMessage(update.effective_chat.id, f"Ho AGGIUNTO la fermata {stop_id}, '{ricerca_stop_per_id(stop_id).name}' ai tuoi preferiti.")
                         print(f"stop {stop_id} ADDED to favorites for user {user_id}")
                     else:
-                        await update.get_bot().sendMessage(update.effective_chat.id, f"La fermata con id {stop_id} è già tra i tuoi preferiti.")
+                        await update.get_bot().sendMessage(update.effective_chat.id, f"La fermata {stop_id}, '{ricerca_stop_per_id(stop_id).name}' è già tra i tuoi preferiti.")
                         print(f"stop {stop_id} ALREADY a favourite for user {user_id}")
                 elif query_descr_array[1] == 'removeFav':
                     user_id = query_args[0]
@@ -934,11 +936,11 @@ async def button_command(update: Update, context: ContextTypes.context):
                     await edit_clicked_button(query, add_to_fav_button)
                     if Utility.is_stop_favorite(user_id, stop_id):
                         Utility.remove_favorite_stop(user_id, stop_id)
-                        await update.get_bot().sendMessage(update.effective_chat.id, f"Ho RIMOSSO la fermata con id {stop_id} dai tuoi preferiti.")
+                        await update.get_bot().sendMessage(update.effective_chat.id, f"Ho RIMOSSO la fermata {stop_id}, '{ricerca_stop_per_id(stop_id).name}' dai tuoi preferiti.")
                         print(f"stop {stop_id} REMOVED from favorites for user {user_id}")
                     else:
                         await update.get_bot().sendMessage(update.effective_chat.id,
-                                                           f"La fermata con id {stop_id} non è tra i tuoi preferiti.")
+                                                           f"La fermata {stop_id}, '{ricerca_stop_per_id(stop_id).name}' non è tra i tuoi preferiti.")
                         print(f"stop {stop_id} NOT a favourite for user {user_id}")
 
 
@@ -1130,13 +1132,15 @@ async def button_command(update: Update, context: ContextTypes.context):
             if query_descr_array[0] == 'stop':
                 stop = ricerca_stop_per_id(query_arg.split(' ')[0])
                 if query_descr_array[1] == 'info':
-                    button1 = InlineKeyboardButton(f"{stop.id}   {stop.name}",
-                                                   callback_data=f"stop{callback_main_divider}{stop.id}")
-                    keyboard = InlineKeyboardMarkup([[button1]])
-                    await query.get_bot().sendMessage(chat_id=query.message.chat_id, text='Fermata:',
-                                                      reply_markup=keyboard)
+                    # button1 = InlineKeyboardButton(f"{stop.id}   {stop.name}",
+                    #                                callback_data=f"stop{callback_main_divider}{stop.id}")
+                    # keyboard = InlineKeyboardMarkup([[button1]])
+                    # await query.get_bot().sendMessage(chat_id=query.message.chat_id, text='Fermata:',
+                    #                                   reply_markup=keyboard)
                     stop_details_text = format_stop_details(get_stop_details(stop.id))
+                    coordinates_string = f"{stop.latitude}, {stop.longitude}"
                     await query.get_bot().sendMessage(chat_id=query.message.chat_id, text=stop_details_text)
+                    await query.get_bot().sendMessage(chat_id=query.message.chat_id, text=coordinates_string)
                     await query.get_bot().sendLocation(query.message.chat_id, stop.latitude, stop.longitude,
                                                        disable_notification=True)
                 elif query_descr_array[1] == 'commands':
@@ -1179,6 +1183,7 @@ async def button_command(update: Update, context: ContextTypes.context):
                                                                            f"{callback_arg_divider}{default_search_radius}")
 
                     remove_from_favorites_button = new_button(f"remove favorite", [f"stop", f"removeFav"], [update.effective_user.id, stop.id])
+                    copy_id_button = new_button(f"copy id", [f"stop", f"copyId"], [stop.id])
                     add_to_favorites_button = InlineKeyboardButton(f"add to favorites", callback_data=f"stop{callback_command_divider}"
                                                                                                       f"addFav{callback_main_divider}"
                                                                                                       f"{update.effective_user.id}{callback_arg_divider}"
@@ -1190,7 +1195,7 @@ async def button_command(update: Update, context: ContextTypes.context):
                                                             callback_data=f"stop{callback_command_divider}"
                                                                           f"arrivals{callback_main_divider}{stop.id}{callback_arg_divider}0")
 
-                    buttons = [old_buttons[0], [info_button, to_here_button]]
+                    buttons = [old_buttons[0], [info_button, copy_id_button]]
                     if Utility.is_stop_favorite(update.effective_user.id, stop.id):
                         buttons.append([near_stops_button, remove_from_favorites_button])
                     else:
@@ -1200,6 +1205,10 @@ async def button_command(update: Update, context: ContextTypes.context):
                     keyboard = InlineKeyboardMarkup(buttons)
                     await message.edit_text(text=message.text, reply_markup=keyboard)
                     print('ALTROOOOOO')
+                elif query_descr_array[1] == 'copyId':
+                    stop = ricerca_stop_per_id(query_arg)
+                    await query.message.reply_text(f"{stop.id}")
+                    await query.message.reply_text(f"Clicca l'id e seleziona 'copia' per copiarlo nella tua clipboard")
 
 
 # async def user_position(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1341,7 +1350,7 @@ def format_stop_details(caratteristiche):
     formatted_string = ""
     formatted_string += f"ID: {caratteristiche['id']}\n"
     formatted_string += f"Nome: {caratteristiche['name']}\n"
-    formatted_string += f"Coordinates:\n{caratteristiche['latitude']}, {caratteristiche['longitude']}\n"
+    # formatted_string += f"Coordinates:\n{caratteristiche['latitude']}, {caratteristiche['longitude']}\n"
 
     alt_stops = caratteristiche['alt_stops']
     if alt_stops:
@@ -1351,6 +1360,10 @@ def format_stop_details(caratteristiche):
 
     return formatted_string.strip()
 
+def get_stop_lat_lon_string(caratteristiche):
+    if not caratteristiche:
+        return "Fermata non trovata"
+    return f"{caratteristiche['latitude']}, {caratteristiche['longitude']}"
 
 # Funzione per ottenere i pulsanti da un oggetto reply_markup
 def get_buttonKeyboard_from_reply_markup(reply_markup):
@@ -2043,7 +2056,7 @@ async def respond_to_stops(update, message, stops, text, buttons_to_add, should_
             dati_id = str(uuid.uuid4())
             common.data[dati_id] = (text, remaining_stops, buttons_to_add)
             more_stops_button = InlineKeyboardButton("...", callback_data=f"moreStops{callback_main_divider}{dati_id}")
-            await respond_to_stops(update, message, stops_to_show, text, [more_stops_button], False)
+            await respond_to_stops(update, message, stops_to_show, text, [more_stops_button], True)
         else:
             await respond_to_stops(update, message, stops_to_show, text, [], True)
 
