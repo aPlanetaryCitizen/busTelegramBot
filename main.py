@@ -1,4 +1,5 @@
 import asyncio
+import json
 from typing import Final, List
 
 
@@ -26,7 +27,7 @@ from datetime import *
 from telegram import ReplyKeyboardMarkup, KeyboardButton
 from math import radians, cos, sin, asin, sqrt
 import uuid
-from flask import Flask, request
+from flask import Flask, request, Response
 
 # from aiogram import Dispatcher, Bot, executor, types
 # from aiogram.types import ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton
@@ -2466,15 +2467,24 @@ def build_user_data_db():
     conn.commit()
     conn.close()
 
+def write_json(data, filename = 'response.json'):
+    with open(filename, 'w') as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)
+
 
 flask_app = Flask(__name__)
-@flask_app.route("/")
+@flask_app.route("/", methods=['POST', 'GET'])
 async def flask_main():
     # loop = asyncio.new_event_loop()
     # asyncio.set_event_loop(loop)
     # asyncio.run(main2())
     # main()
-    return "ma come cazzo si usa sto flask"
+    if request.method == 'POST':
+        msg = request.get_json()
+        write_json(msg, 'telegram_request.json')
+        return Response('ok', status=200)
+    else:
+        return "ma come cazzo si usa sto flask"
 async def main2():
 
     app = Application.builder().token(TOKEN).build()
@@ -2544,6 +2554,8 @@ def main():
 
 
     # https://api.telegram.org/bot6239455143:AAEfAT9erm_VVUcK8Pu18RFILHOlAHdfji0/getMe
+    # https://api.telegram.org/bot6239455143:AAEfAT9erm_VVUcK8Pu18RFILHOlAHdfji0/setWebhook?url=http://aplanetarycitizen.pythonanywhere.com/
+    # https://api.telegram.org/bot6239455143:AAEfAT9erm_VVUcK8Pu18RFILHOlAHdfji0/sendMessage?chat_id=62307876&text=Ciao caro
 
     # bot = Bot(app)
     # bot.deleteWebhook
