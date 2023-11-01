@@ -2469,10 +2469,11 @@ def build_user_data_db():
 
 flask_app = Flask(__name__)
 @flask_app.route("/")
-def flask_main():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    asyncio.run(main2())
+async def flask_main():
+    # loop = asyncio.new_event_loop()
+    # asyncio.set_event_loop(loop)
+    # asyncio.run(main2())
+    # main()
     return "ma come cazzo si usa sto flask"
 async def main2():
 
@@ -2499,24 +2500,26 @@ async def main2():
 
     app.add_error_handler(error)
 
+    PORT = int(os.environ.get('PORT', '8443'))
+
     # VA CREATA UNA "ENVIRONMENT VARIABLE" PER IL SECRET TOKEN PERCHE' NON E' IL CASO DI SCRIVERLA QUI,
     # PAROLE DELLA GUIDA DI PYTHON-TELEGRAM-BOT
     app.run_webhook(
         listen='0.0.0.0',
-        port=8443,
+        port=PORT,
         secret_token='DA_CAMBIARE_SECRET_TOKEN',
         key='private.key',
         cert='cert.pem',
         webhook_url=webhook_url
     )
-    await asyncio.sleep(1)
+    # await asyncio.sleep(1)
 
 
 def main():
     PORT = int(os.environ.get('PORT', '5000'))
     app = Application.builder().token(TOKEN).build()
     bot = app.bot
-    bot.setWebhook("https://aPlanetaryCitizen.pythonanywhere.com/" + TOKEN)
+    # bot.setWebhook("https://aPlanetaryCitizen.pythonanywhere.com/" + TOKEN)
 
     if not os.path.isfile('bot.db'):
         start()
@@ -2539,13 +2542,8 @@ def main():
     print('polling...')
     app.run_polling(poll_interval=1)
 
-    # bot = Bot(app)
-    # bot.deleteWebhook
-    #
-    # @flask_app.route('/')
-    # def webhook
 
-
+    # https://api.telegram.org/bot6239455143:AAEfAT9erm_VVUcK8Pu18RFILHOlAHdfji0/getMe
 
     # bot = Bot(app)
     # bot.deleteWebhook
@@ -2555,10 +2553,18 @@ def main():
 
 
 
+    # bot = Bot(app)
+    # bot.deleteWebhook
+    #
+    # @flask_app.route('/')
+    # def webhook
 
-# if __name__ == '__main__':
-#
-#     main2()
+
+
+
+if __name__ == '__main__':
+
+    flask_app.run()
 
     # app = Application.builder().token(TOKEN).build()
     #
