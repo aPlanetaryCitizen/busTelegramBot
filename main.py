@@ -2469,6 +2469,7 @@ def build_user_data_db():
 flask_app = Flask(__name__)
 @flask_app.route("/")
 def flask_main():
+    main2()
     return "ma come cazzo si usa sto flask"
 def main2():
     PORT = int(os.environ.get('PORT', '5000'))
