@@ -2551,9 +2551,9 @@ def main():
 
 
 
-if __name__ == '__main__':
-
-    main2()
+# if __name__ == '__main__':
+#
+#     main2()
 
     # app = Application.builder().token(TOKEN).build()
     #
