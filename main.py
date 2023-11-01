@@ -41,6 +41,7 @@ callback_main_divider = '__'
 callback_command_divider = '::'
 callback_arg_divider = ';;'
 SIMILARITY_THRESHOLD = 0.7
+update_queue = Queue()
 # dp = Dispatcher(Bot(TOKEN))
 
 to_print = []
@@ -2467,8 +2468,50 @@ def build_user_data_db():
 
 flask_app = Flask(__name__)
 @flask_app.route("/")
-def main():
+def flask_main():
+    return "ma come cazzo si usa sto flask"
+def main2():
+    PORT = int(os.environ.get('PORT', '5000'))
     app = Application.builder().token(TOKEN).build()
+    # bot = app.bot
+    webhook_url = "https://aPlanetaryCitizen.pythonanywhere.com/" + TOKEN
+    # bot.setWebhook(webhook_url)
+
+    if not os.path.isfile('bot.db'):
+        start()
+    if not os.path.isfile('userData.db'):
+        build_user_data_db()
+
+    app.add_handler(CommandHandler('start', start_command))
+    app.add_handler(CommandHandler('help', help_command))
+    app.add_handler(CommandHandler('test', test_command))
+    app.add_handler(CommandHandler('stopsnearme', stops_near_user_command))
+    app.add_handler(CommandHandler('showfavorites', show_favorites_command))
+    # app.add_handler(CommandHandler('arrivalsHere', arrivals_near_user_command))
+
+    app.add_handler(MessageHandler(filters.TEXT, handle_message))
+    app.add_handler(CallbackQueryHandler(button_command))
+    app.add_handler(MessageHandler(filters.LOCATION, save_user_location))
+
+    app.add_error_handler(error)
+
+    # VA CREATA UNA "ENVIRONMENT VARIABLE" PER IL SECRET TOKEN PERCHE' NON E' IL CASO DI SCRIVERLA QUI,
+    # PAROLE DELLA GUIDA DI PYTHON-TELEGRAM-BOT
+    app.run_webhook(
+        listen='0.0.0.0',
+        port=8443,
+        secret_token='DA_CAMBIARE_SECRET_TOKEN',
+        key='private.key',
+        cert='cert.pem',
+        webhook_url=webhook_url
+    )
+
+
+def main():
+    PORT = int(os.environ.get('PORT', '5000'))
+    app = Application.builder().token(TOKEN).build()
+    bot = app.bot
+    bot.setWebhook("https://aPlanetaryCitizen.pythonanywhere.com/" + TOKEN)
 
     if not os.path.isfile('bot.db'):
         start()
@@ -2498,9 +2541,19 @@ def main():
     # def webhook
 
 
+
+    # bot = Bot(app)
+    # bot.deleteWebhook
+    #
+    # @flask_app.route('/')
+    # def webhook
+
+
+
+
 if __name__ == '__main__':
 
-    main()
+    main2()
 
     # app = Application.builder().token(TOKEN).build()
     #
