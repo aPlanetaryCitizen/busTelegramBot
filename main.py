@@ -1,3 +1,4 @@
+import asyncio
 from typing import Final, List
 
 
@@ -2469,10 +2470,12 @@ def build_user_data_db():
 flask_app = Flask(__name__)
 @flask_app.route("/")
 def flask_main():
-    main2()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    asyncio.run(main2())
     return "ma come cazzo si usa sto flask"
-def main2():
-    PORT = int(os.environ.get('PORT', '5000'))
+async def main2():
+
     app = Application.builder().token(TOKEN).build()
     # bot = app.bot
     webhook_url = "https://aPlanetaryCitizen.pythonanywhere.com/" + TOKEN
@@ -2506,6 +2509,7 @@ def main2():
         cert='cert.pem',
         webhook_url=webhook_url
     )
+    await asyncio.sleep(1)
 
 
 def main():
