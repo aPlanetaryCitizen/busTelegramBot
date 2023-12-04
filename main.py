@@ -952,7 +952,8 @@ async def button_command(update: Update, context: ContextTypes.context):
             if query_descr == 'stop':
                 stop = ricerca_stop_per_id(query_arg.split(' ')[0])
                 print(stop)
-                await respond_to_stops(update, query.message, [stop], f"Fermata: ", [], False)
+                # await respond_to_stops(update, query.message, [stop], f"Fermata: ", [], False)
+                await show_arrivals(query.message, stop, 0, False)
                 # await show_arrivals(query.message, stop, 0)
             elif query_descr == 'moreStops':
                 reply_markup = query.message.reply_markup
@@ -1208,7 +1209,9 @@ async def button_command(update: Update, context: ContextTypes.context):
                 elif query_descr_array[1] == 'copyId':
                     stop = ricerca_stop_per_id(query_arg)
                     await query.message.reply_text(f"{stop.id}")
-                    await query.message.reply_text(f"Clicca l'id e seleziona 'copia' per copiarlo nella tua clipboard")
+                    for x in get_alt_stops(stop.id):
+                        print(x)
+                        await query.message.reply_text(f"{x[0]}")
 
 
 # async def user_position(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1855,24 +1858,42 @@ def search_for(text: str) -> []:
 
 # def arrivals_near_pos(lat, lon, radius, time, delta_time):
 
-# async def arrivals_near_user_command(update, context):
-#     user_id = update.effective_user.id
-#     if not (user_id in common.user_locations.keys()):
-#         await update.message.reply_text(f"Per usare questa funzione ho bisogno che tu mi dia accesso alla posizione. "
-#                                         f"Se non l'hai già fatto premi l'icona di condivisione, "
-#                                         f"scegli 'posizione' e poi 'posizione in tempo reale', se invece l'hai "
-#                                         f"già fatto riprova tra qualche secondo.")
-#     else:
-#         await user_location_time_check(update, update.message)
-#         coordinates = common.user_locations[user_id]['location']
-#         lat = coordinates[0]
-#         lon = coordinates[1]
-#         radius = default_search_radius
-#         stops = get_stops_within_radius(lat, lon, radius)
-#         widen_radius_button = InlineKeyboardButton(f"widen search radius",
-#                                                    callback_data=f"widenAtLatLonRadius{callback_main_divider}{lat}{callback_arg_divider}"
-#                                                                  f"{lon}{callback_arg_divider}{radius + default_search_radius_increment}")
-#
+async def arrivals_near_user_command(update, context):
+    user_id = update.effective_user.id
+    if not (user_id in common.user_locations.keys()):
+        await update.message.reply_text(f"Per usare questa funzione ho bisogno che tu mi dia accesso alla posizione. "
+                                        f"Se non l'hai già fatto premi l'icona di condivisione, "
+                                        f"scegli 'posizione' e poi 'posizione in tempo reale', se invece l'hai "
+                                        f"già fatto riprova tra qualche secondo.")
+    else:
+        await user_location_time_check(update, update.message)
+        coordinates = common.user_locations[user_id]['location']
+        lat = coordinates[0]
+        lon = coordinates[1]
+        radius = default_search_radius
+        stops = first_n_near_stops(lat, lon, 5)
+        results = []
+        for stop in stops:
+            arrivals = get_stop_arrivals_text_now(stop)
+            print(arrivals)
+            results.append((stop, arrivals))
+            await update.message.reply_text(arrivals)
+        # for result in results:
+            # print(f"{result[0].name}\n{result[1]}\n\n\n")
+
+
+def first_n_near_stops(lat, lon, n):
+    radius = default_search_radius
+    stops = get_stops_within_radius(lat, lon, radius)
+    while len(stops) < n:
+        radius += default_search_radius
+        stops = get_stops_within_radius(lat, lon, radius)
+
+    sorted_stops = Utility.sort_stops_by_dist_to(stops, lat, lon)
+    if len(sorted_stops) > n:
+        sorted_stops = sorted_stops[:n]
+    return stops
+
 
 async def stops_near_user_command(update, context):
     user_id = update.effective_user.id
@@ -2006,6 +2027,8 @@ async def display_search_results(update, search_str, search_res):
         await respond_to_found_stops(update, update.message, found_stops, f"Hai cercato '{search_str}'", search_str)
 
 
+
+
 async def respond_to_found_stops(update, message, stops, text, search_str):
     # stops = input_stops[::-1]
     if len(stops) > default_num_of_stops_to_show_on_search:
@@ -2066,7 +2089,7 @@ async def respond_to_stops(update, message, stops, text, buttons_to_add, should_
     # if should_edit_latest_message:
     #     stops_shown = len(message.reply_markup.inline_keyboard)
     #     stops_to_show = stops_shown
-    elif len(stops) > 1:
+    elif len(stops) >= 1:
         buttons = [[]]
         for stop in stops:
             buttons.append(
@@ -2081,33 +2104,33 @@ async def respond_to_stops(update, message, stops, text, buttons_to_add, should_
             await message.edit_text(text=text, reply_markup=keyboard)
         else:
             await message.reply_text(text, reply_markup=keyboard)
-    elif len(stops) == 1:
-        # buttons = []
-        # button1 = InlineKeyboardButton(f"{stops[0].to_text()}", callback_data=f"stop{callback_main_divider}{stops[0].id}")
-        # # info_button = InlineKeyboardButton(f"info", callback_data=f"stop:info_{stops[0].id}")
-        # stop_user_commands = InlineKeyboardButton(f"stop_commands", callback_data=f"stop{callback_command_divider}commands{callback_main_divider}{stops[0].id}")
-        # arrivals_command = InlineKeyboardButton(f"arrivi", callback_data=f"stop{callback_command_divider}arrivals{callback_main_divider}{stops[0].id}{callback_arg_divider}0")
-        # buttons.append([button1, stop_user_commands])
-        # buttons.append([arrivals_command])
-        # for button in buttons_to_add:
-        #     buttons.append([button])
-        # keyboard = InlineKeyboardMarkup(buttons)
-        # if should_edit_latest_message:
-        #     await message.edit_text(text=text, reply_markup=keyboard)
-        # else:
-        #     await message.reply_text(text=f"{text}",
-        #                             reply_markup=keyboard)
-        await show_arrivals(message, stops[0], 0, False)
-
-        # await respond_to_stops(update, message, stops,f"{stops[0].to_text()}", [])
-        # arrivi_text = format_trip_results(ricerca_trip_per_fermata_data_tempo(stops[0].id, Utility.get_current_date_str(), Utility.get_now_plus_deltamins(-10), Utility.get_now_plus_deltamins(default_time_range)))
-        # print(arrivi_text)
-        # # arrivals = Utility.sort_arrivals(stops[0].arrivals_in_minutes_range(10, default_time_range))
-        # # arrivals_text = Utility.arrivals_to_brief_text(arrivals)
-        # if len(arrivi_text) > 0:
-        #     await message.reply_text(text=arrivi_text)
-        # else:
-        #     await message.reply_text(text=f"Mi spiace, non ho trovato arrivi a\n{stops[0].to_text()}")
+    # elif len(stops) == 1:
+    #     # buttons = []
+    #     # button1 = InlineKeyboardButton(f"{stops[0].to_text()}", callback_data=f"stop{callback_main_divider}{stops[0].id}")
+    #     # # info_button = InlineKeyboardButton(f"info", callback_data=f"stop:info_{stops[0].id}")
+    #     # stop_user_commands = InlineKeyboardButton(f"stop_commands", callback_data=f"stop{callback_command_divider}commands{callback_main_divider}{stops[0].id}")
+    #     # arrivals_command = InlineKeyboardButton(f"arrivi", callback_data=f"stop{callback_command_divider}arrivals{callback_main_divider}{stops[0].id}{callback_arg_divider}0")
+    #     # buttons.append([button1, stop_user_commands])
+    #     # buttons.append([arrivals_command])
+    #     # for button in buttons_to_add:
+    #     #     buttons.append([button])
+    #     # keyboard = InlineKeyboardMarkup(buttons)
+    #     # if should_edit_latest_message:
+    #     #     await message.edit_text(text=text, reply_markup=keyboard)
+    #     # else:
+    #     #     await message.reply_text(text=f"{text}",
+    #     #                             reply_markup=keyboard)
+    #     await show_arrivals(message, stops[0], 0, False)
+    #
+    #     # await respond_to_stops(update, message, stops,f"{stops[0].to_text()}", [])
+    #     # arrivi_text = format_trip_results(ricerca_trip_per_fermata_data_tempo(stops[0].id, Utility.get_current_date_str(), Utility.get_now_plus_deltamins(-10), Utility.get_now_plus_deltamins(default_time_range)))
+    #     # print(arrivi_text)
+    #     # # arrivals = Utility.sort_arrivals(stops[0].arrivals_in_minutes_range(10, default_time_range))
+    #     # # arrivals_text = Utility.arrivals_to_brief_text(arrivals)
+    #     # if len(arrivi_text) > 0:
+    #     #     await message.reply_text(text=arrivi_text)
+    #     # else:
+    #     #     await message.reply_text(text=f"Mi spiace, non ho trovato arrivi a\n{stops[0].to_text()}")
     elif len(stops) == 0:
         buttons = [[]]
         for button in buttons_to_add:
@@ -2119,6 +2142,14 @@ async def respond_to_stops(update, message, stops, text, buttons_to_add, should_
         pass
     #//////////////////////////////////////////////////
 
+def get_stop_arrivals_text_now(stop):
+    arrivi_text = format_trip_results(get_stop_arrivals_now(stop))
+    return arrivi_text
+def get_stop_arrivals_now(stop):
+    arrivals = ricerca_trip_per_fermata_data_tempo(stop.id, Utility.get_current_date_str(),
+                                        Utility.get_now_plus_deltamins(0),
+                                        Utility.get_now_plus_deltamins(10))
+    return arrivals
 
 async def show_arrivals(message, stop, delta_minutes, should_edit_latest_message):
     if should_edit_latest_message:
@@ -2480,7 +2511,7 @@ def main():
     app.add_handler(CommandHandler('test', test_command))
     app.add_handler(CommandHandler('stopsnearme', stops_near_user_command))
     app.add_handler(CommandHandler('showfavorites', show_favorites_command))
-    # app.add_handler(CommandHandler('arrivalsHere', arrivals_near_user_command))
+    app.add_handler(CommandHandler('arrivalsHere', arrivals_near_user_command))
 
     app.add_handler(MessageHandler(filters.TEXT, handle_message))
     app.add_handler(CallbackQueryHandler(button_command))

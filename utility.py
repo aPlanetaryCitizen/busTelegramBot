@@ -321,6 +321,10 @@ class Utility:
         return new_time.strftime('%H:%M:%S')
 
     @staticmethod
+    def now():
+        return Utility.get_now_at_timezone()
+
+    @staticmethod
     def get_now_at_timezone():
         desired_timezone = pytz.timezone('Europe/Rome')
         return datetime.now(desired_timezone)

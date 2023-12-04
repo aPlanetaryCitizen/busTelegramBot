@@ -55,8 +55,10 @@ class Fermata:
         return self.arrivals_in_datetime_range(start_datetime, minutes_range)
 
 
-    def arrivals_now(self):
-        return self.arrivals_in_minutes_range(20)
+    def arrivals_now(self, minutes_range):
+        return self.arrivals_in_minutes_range(0, minutes_range)
+
+
 
     def simplified_id(self):
         result = ''
