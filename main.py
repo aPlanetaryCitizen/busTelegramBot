@@ -1,3 +1,4 @@
+import random
 from typing import Final, List
 
 
@@ -1874,10 +1875,19 @@ async def arrivals_near_user_command(update, context):
         stops = first_n_near_stops(lat, lon, 5)
         results = []
         for stop in stops:
-            arrivals = get_stop_arrivals_text_now(stop)
-            print(arrivals)
-            results.append((stop, arrivals))
-            await update.message.reply_text(arrivals)
+            arrivals = get_stop_arrivals_now(stop)['trips']
+            if len(arrivals) > 0:
+                print(arrivals)
+                results.append((stop, arrivals))
+                await update.message.reply_text(arrivals)
+        if len(results) == 0:
+            rand = random.randint(1,3)
+            if rand == 1:
+                await update.message.reply_text(f"nulla......")
+            elif rand == 2:
+                await update.message.reply_text(f"non passa un ca")
+            elif rand == 3:
+                await update.message.reply_text(f"il vuoto cosmico")
         # for result in results:
             # print(f"{result[0].name}\n{result[1]}\n\n\n")
 
