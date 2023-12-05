@@ -1,7 +1,7 @@
 import random
 from typing import Final, List
 
-
+from arrival import Arrival
 from fermata import Fermata
 from utility import Utility
 from trip import Trip
@@ -1467,6 +1467,15 @@ def ricerca_trip_per_fermata_data_tempo(stop_id, date, start_time, end_time):
 
     return results_dict
 
+def trips_by_stop_date_time(stop_id, date, start_time, end_time):
+    db_results = ricerca_trip_per_fermata_data_tempo(stop_id, date, start_time, end_time)
+    stop = ricerca_stop_per_id(stop_id)
+    arrivals = []
+    trips_dict = db_results['trips']
+    for t in trips_dict:
+        arrivals.append(Arrival(stop_id, t['time'], t['trip_code']))
+    return arrivals
+
 def new_button(text, query_descr, query_args):
     callback = ''
     if len(query_descr) == 0:
@@ -1544,7 +1553,93 @@ def ricerca_linee_per_fermata(stop_id):
     conn.close()
 
     return results
+def ricerca_trip_per_id(id):
+    conn = sqlite3.connect('bot.db')
+    cursor = conn.cursor()
 
+    # Cerca nella tabella "stops"
+    cursor.execute('SELECT * FROM trips WHERE id = ?', (id,))
+    result = cursor.fetchone()
+
+    if result:
+        conn.close()
+        trip = Trip(result[0])
+        trip.route_id = result[1]
+        trip.line = result[2]
+        trip.headsign = result[3]
+        trip.service_id = result[4]
+
+        return
+
+def basic_trip_by_code(trip_code):
+    conn = sqlite3.connect('bot.db')
+    cursor = conn.cursor()
+
+    # Eseguire una query per ottenere i dettagli del viaggio in base al trip code
+    cursor.execute('SELECT * FROM trips WHERE code = ?', (trip_code,))
+    trip_data = cursor.fetchone()
+
+    if trip_data is not None:
+        # Se il viaggio è presente nel database, costruire l'oggetto Trip corrispondente
+        trip = Trip(trip_data[0])
+        trip.route_id = trip_data[1]
+        trip.line = trip_data[2]
+        trip.headsign = trip_data[3]
+        trip.service_id = trip_data[4]
+        # trip.dates = []
+        # trip.stopsids_times = []
+
+        # Recuperare le date associate al viaggio
+        # cursor.execute('SELECT date FROM trip_dates WHERE trip_id = ?', (trip_code,))
+        # trip_dates = cursor.fetchall()
+        # trip.dates = [datetime.strptime(date[0], '%Y-%m-%d') for date in trip_dates]
+        #
+        # # Recuperare gli orari delle fermate associate al viaggio
+        # cursor.execute('SELECT stop_id, time FROM trip_stops_times WHERE trip_id = ?', (trip_code,))
+        # trip_stops_times = cursor.fetchall()
+        # trip.stopsids_times = [(stop_time[0], datetime.strptime(stop_time[1], '%H:%M:%S')) for stop_time in trip_stops_times]
+
+        conn.close()
+
+        return trip
+
+    conn.close()
+    return None  # Se il trip code non è presente nel database, ritornare None
+
+def full_trip_by_code(trip_code):
+    conn = sqlite3.connect('bot.db')
+    cursor = conn.cursor()
+
+    # Eseguire una query per ottenere i dettagli del viaggio in base al trip code
+    cursor.execute('SELECT * FROM trips WHERE code = ?', (trip_code,))
+    trip_data = cursor.fetchone()
+
+    if trip_data is not None:
+        # Se il viaggio è presente nel database, costruire l'oggetto Trip corrispondente
+        trip = Trip(trip_data[0])
+        trip.route_id = trip_data[1]
+        trip.line = trip_data[2]
+        trip.headsign = trip_data[3]
+        trip.service_id = trip_data[4]
+        # trip.dates = []
+        # trip.stopsids_times = []
+
+        # Recuperare le date associate al viaggio
+        cursor.execute('SELECT date FROM trip_dates WHERE trip_id = ?', (trip_code,))
+        trip_dates = cursor.fetchall()
+        trip.dates = [datetime.strptime(date[0], '%Y-%m-%d') for date in trip_dates]
+
+        # Recuperare gli orari delle fermate associate al viaggio
+        cursor.execute('SELECT stop_id, time FROM trip_stops_times WHERE trip_id = ?', (trip_code,))
+        trip_stops_times = cursor.fetchall()
+        trip.stopsids_times = [(stop_time[0], datetime.strptime(stop_time[1], '%H:%M:%S')) for stop_time in trip_stops_times]
+
+        conn.close()
+
+        return trip
+
+    conn.close()
+    return None  # Se il trip code non è presente nel database, ritornare None
 
 def ricerca_stop_per_id(id):
     conn = sqlite3.connect('bot.db')
@@ -1875,12 +1970,12 @@ async def arrivals_near_user_command(update, context):
         stops = first_n_near_stops(lat, lon, 5)
         results = []
         for stop in stops:
-            arrivals = get_stop_arrivals_now(stop)['trips']
+            arrivals = get_stop_arrivals_now(stop)
             if len(arrivals) > 0:
                 print(arrivals)
                 results.append((stop, arrivals))
-                await update.message.reply_text(arrivals)
-        if len(results) == 0:
+                # await update.message.reply_text(get_stop_arrivals_text_now(stop))
+        if len(results) <= 0:
             rand = random.randint(1,3)
             if rand == 1:
                 await update.message.reply_text(f"nulla......")
@@ -1888,6 +1983,20 @@ async def arrivals_near_user_command(update, context):
                 await update.message.reply_text(f"non passa un ca")
             elif rand == 3:
                 await update.message.reply_text(f"il vuoto cosmico")
+        else:
+            final_message = ''
+            for result in results:
+                stop = result[0]
+                arrivals = result[1]
+                final_message += f"{stop.id} - {stop.name}\n"
+                for arrival in arrivals:
+                    trip = basic_trip_by_code(arrival.trip_id)
+                    final_message += f"{arrival.time}  {trip.line}  {trip.headsign}\n"
+                final_message += f"\n"
+            await update.message.reply_text(final_message)
+
+
+
         # for result in results:
             # print(f"{result[0].name}\n{result[1]}\n\n\n")
 
@@ -2156,7 +2265,7 @@ def get_stop_arrivals_text_now(stop):
     arrivi_text = format_trip_results(get_stop_arrivals_now(stop))
     return arrivi_text
 def get_stop_arrivals_now(stop):
-    arrivals = ricerca_trip_per_fermata_data_tempo(stop.id, Utility.get_current_date_str(),
+    arrivals = trips_by_stop_date_time(stop.id, Utility.get_current_date_str(),
                                         Utility.get_now_plus_deltamins(0),
                                         Utility.get_now_plus_deltamins(10))
     return arrivals
