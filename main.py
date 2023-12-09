@@ -2003,8 +2003,8 @@ async def arrivals_near_user_deltamins(update, message, deltamins, should_edit):
                     final_message += f"{arrival.time}  {trip.line}  {trip.headsign}\n"
                 final_message += f"\n"
         print(f"deltamins: {deltamins}")
-        back_button = new_button("-5", ["arrivalsNearUser"], [int(deltamins) - short_time_increment])
-        forward_button = new_button("+5", ["arrivalsNearUser"], [int(deltamins) + short_time_increment])
+        back_button = new_button("<<", ["arrivalsNearUser"], [int(deltamins) - short_time_increment])
+        forward_button = new_button(">>", ["arrivalsNearUser"], [int(deltamins) + short_time_increment])
         print(forward_button.callback_data)
         keyboard = InlineKeyboardMarkup([[back_button, forward_button]])
         if should_edit:
