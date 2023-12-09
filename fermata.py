@@ -83,9 +83,12 @@ class Fermata:
             info += f"{self.alt_ids_names[i][0]}   {self.alt_ids_names[i][1]}\n"
         return info
 
-    def dist_to(self, stop2):
+    def dist_to_stop(self, stop2):
         dist = distance.distance((self.latitude, self.longitude),(stop2.latitude, stop2.longitude)).m
         return dist
+
+    def dist_to_pos(self, lat, lon):
+        return Utility.haversine(lat, lon, self.latitude, self.longitude)
 
     def alt_ids(self):
         result = []

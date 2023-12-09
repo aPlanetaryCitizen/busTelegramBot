@@ -35,9 +35,11 @@ from flask import Flask, request
 TOKEN: Final = '6239455143:AAEfAT9erm_VVUcK8Pu18RFILHOlAHdfji0'
 BOT_USERNAME: Final = '@sienaBus_bot'
 default_time_range = 50
+short_time_increment = 5
 default_search_radius = 100
 default_search_radius_increment = 100
 default_num_of_stops_to_show_on_search = 5
+num_of_stops_to_show_on_arrivals_search = 5
 callback_main_divider = '__'
 callback_command_divider = '::'
 callback_arg_divider = ';;'
@@ -902,7 +904,6 @@ async def button_command(update: Update, context: ContextTypes.context):
                                            [widen_radius_button], True)
 
 
-
         elif len(query_descr_array) == 2:
             if query_descr_array[0] == 'stop':
                 if query_descr_array[1] == 'arrivals':
@@ -1094,6 +1095,9 @@ async def button_command(update: Update, context: ContextTypes.context):
                                         f"scegli 'posizione' e poi 'posizione in tempo reale', se invece l'hai "
                                         f"già fatto riprova tra qualche secondo.")
 
+            elif query_descr == 'arrivalsNearUser':
+                print(f"query arg: {query_arg}")
+                await arrivals_near_user_deltamins(update, query.message, query_arg, True)
 
 
 
@@ -1467,7 +1471,7 @@ def ricerca_trip_per_fermata_data_tempo(stop_id, date, start_time, end_time):
 
     return results_dict
 
-def trips_by_stop_date_time(stop_id, date, start_time, end_time):
+def arrivals_by_stop_date_time(stop_id, date, start_time, end_time):
     db_results = ricerca_trip_per_fermata_data_tempo(stop_id, date, start_time, end_time)
     stop = ricerca_stop_per_id(stop_id)
     arrivals = []
@@ -1953,38 +1957,41 @@ def search_for(text: str) -> []:
 
 
 # def arrivals_near_pos(lat, lon, radius, time, delta_time):
-
-async def arrivals_near_user_command(update, context):
+async def arrivals_near_user_deltamins(update, message, deltamins, should_edit):
     user_id = update.effective_user.id
+    # user_id = message.chat_id
     if not (user_id in common.user_locations.keys()):
-        await update.message.reply_text(f"Per usare questa funzione ho bisogno che tu mi dia accesso alla posizione. "
+        await update.get_bot().sendMessage(chat_id=user_id, text=f"Per usare questa funzione ho bisogno che tu mi dia accesso alla posizione. "
                                         f"Se non l'hai già fatto premi l'icona di condivisione, "
                                         f"scegli 'posizione' e poi 'posizione in tempo reale', se invece l'hai "
                                         f"già fatto riprova tra qualche secondo.")
     else:
-        await user_location_time_check(update, update.message)
+        # await user_location_time_check(update, update.message)
         coordinates = common.user_locations[user_id]['location']
         lat = coordinates[0]
         lon = coordinates[1]
         radius = default_search_radius
-        stops = first_n_near_stops(lat, lon, 5)
+        # stops = first_n_near_stops_in_radius(lat, lon, 5, default_search_radius)
+        stops = restrict_to_n_by_pos(get_stops_within_radius(lat, lon, default_search_radius), num_of_stops_to_show_on_arrivals_search, lat, lon)
+        for stop in stops: print(stop.id)  # test
         results = []
         for stop in stops:
-            arrivals = get_stop_arrivals_now(stop)
+            arrivals = arrivals_by_stop_deltamins(stop, deltamins)
             if len(arrivals) > 0:
                 print(arrivals)
                 results.append((stop, arrivals))
                 # await update.message.reply_text(get_stop_arrivals_text_now(stop))
+        final_message = ''
+        final_message += f"Bus in arrivo qui, alle {Utility.get_now_plus_deltamins(int(deltamins))[:-3]}\n"
         if len(results) <= 0:
-            rand = random.randint(1,3)
+            rand = random.randint(1, 3)
             if rand == 1:
-                await update.message.reply_text(f"nulla......")
+                final_message += f"nulla......"
             elif rand == 2:
-                await update.message.reply_text(f"non passa un ca")
+                final_message += f"non passa un ca"
             elif rand == 3:
-                await update.message.reply_text(f"il vuoto cosmico")
+                final_message += f"il vuoto cosmico"
         else:
-            final_message = ''
             for result in results:
                 stop = result[0]
                 arrivals = result[1]
@@ -1993,7 +2000,68 @@ async def arrivals_near_user_command(update, context):
                     trip = basic_trip_by_code(arrival.trip_id)
                     final_message += f"{arrival.time}  {trip.line}  {trip.headsign}\n"
                 final_message += f"\n"
-            await update.message.reply_text(final_message)
+        print(f"deltamins: {deltamins}")
+        back_button = new_button("-5", ["arrivalsNearUser"], [int(deltamins) - short_time_increment])
+        forward_button = new_button("+5", ["arrivalsNearUser"], [int(deltamins) + short_time_increment])
+        print(forward_button.callback_data)
+        keyboard = InlineKeyboardMarkup([[back_button, forward_button]])
+        if should_edit:
+            await update.get_bot().edit_message_text(chat_id=user_id, message_id=message.message_id, text=final_message, reply_markup=keyboard)
+        else:
+            await update.get_bot().sendMessage(chat_id=user_id, text=final_message, reply_markup=keyboard)
+async def arrivals_near_user_command(update, context):
+
+    print("COMMAND")
+    await arrivals_near_user_deltamins(update, None, 0, False)
+
+
+
+    # user_id = update.effective_user.id
+    # if not (user_id in common.user_locations.keys()):
+    #     await update.message.reply_text(f"Per usare questa funzione ho bisogno che tu mi dia accesso alla posizione. "
+    #                                     f"Se non l'hai già fatto premi l'icona di condivisione, "
+    #                                     f"scegli 'posizione' e poi 'posizione in tempo reale', se invece l'hai "
+    #                                     f"già fatto riprova tra qualche secondo.")
+    # else:
+    #     await user_location_time_check(update, update.message)
+    #     coordinates = common.user_locations[user_id]['location']
+    #     lat = coordinates[0]
+    #     lon = coordinates[1]
+    #     radius = default_search_radius
+    #     # stops = first_n_near_stops_in_radius(lat, lon, 5, default_search_radius)
+    #     stops = restrict_to_n_by_pos(get_stops_within_radius(lat, lon, default_search_radius), 5, lat, lon)
+    #     for stop in stops: print(stop.id) #test
+    #     results = []
+    #     for stop in stops:
+    #         arrivals = get_stop_arrivals_now(stop)
+    #         if len(arrivals) > 0:
+    #             print(arrivals)
+    #             results.append((stop, arrivals))
+    #             # await update.message.reply_text(get_stop_arrivals_text_now(stop))
+    #     if len(results) <= 0:
+    #         rand = random.randint(1,3)
+    #         if rand == 1:
+    #             await update.message.reply_text(f"nulla......")
+    #         elif rand == 2:
+    #             await update.message.reply_text(f"non passa un ca")
+    #         elif rand == 3:
+    #             await update.message.reply_text(f"il vuoto cosmico")
+    #     else:
+    #         final_message = ''
+    #         for result in results:
+    #             stop = result[0]
+    #             arrivals = result[1]
+    #             final_message += f"{stop.id} - {stop.name}\n"
+    #             for arrival in arrivals:
+    #                 trip = basic_trip_by_code(arrival.trip_id)
+    #                 final_message += f"{arrival.time}  {trip.line}  {trip.headsign}\n"
+    #             final_message += f"\n"
+    #         back_button = new_button("-5", ["arrivalsNearUser"], [-5])
+    #         forward_button = new_button("+5", ["arrivalsNearUser"], [+5])
+    #         print(forward_button.callback_data)
+    #         keyboard = InlineKeyboardMarkup([[back_button, forward_button]])
+    #         await update.message.reply_text(text=final_message, reply_markup=keyboard)
+
 
 
 
@@ -2012,6 +2080,26 @@ def first_n_near_stops(lat, lon, n):
     if len(sorted_stops) > n:
         sorted_stops = sorted_stops[:n]
     return stops
+
+def first_n_near_stops_in_radius(lat, lon, n, radius):
+    stops = get_stops_within_radius(lat, lon, radius)
+    while len(stops) < n:
+        radius += radius
+        stops = get_stops_within_radius(lat, lon, radius)
+
+    sorted_stops = Utility.sort_stops_by_dist_to(stops, lat, lon)
+    if len(sorted_stops) > n:
+        sorted_stops = sorted_stops[:n]
+    return stops
+
+def restrict_to_n_by_pos(stops, n, lat, lon):
+    if len(stops) <= n:
+        return stops
+    else:
+        sorted_stops = Utility.sort_stops_by_dist_to(stops, lat, lon)
+        return sorted_stops[:n]
+
+
 
 
 async def stops_near_user_command(update, context):
@@ -2198,7 +2286,7 @@ async def respond_to_stops(update, message, stops, text, buttons_to_add, should_
             dati_id = str(uuid.uuid4())
             common.data[dati_id] = (text, remaining_stops, buttons_to_add)
             more_stops_button = InlineKeyboardButton("...", callback_data=f"moreStops{callback_main_divider}{dati_id}")
-            await respond_to_stops(update, message, stops_to_show, text, [more_stops_button], True)
+            await respond_to_stops(update, message, stops_to_show, text, [more_stops_button], False)
         else:
             await respond_to_stops(update, message, stops_to_show, text, [], True)
 
@@ -2265,9 +2353,14 @@ def get_stop_arrivals_text_now(stop):
     arrivi_text = format_trip_results(get_stop_arrivals_now(stop))
     return arrivi_text
 def get_stop_arrivals_now(stop):
-    arrivals = trips_by_stop_date_time(stop.id, Utility.get_current_date_str(),
-                                        Utility.get_now_plus_deltamins(0),
+    arrivals = arrivals_by_stop_date_time(stop.id, Utility.get_current_date_str(),
+                                        Utility.now(),
                                         Utility.get_now_plus_deltamins(10))
+    return arrivals
+def arrivals_by_stop_deltamins(stop, deltamins):
+    arrivals = arrivals_by_stop_date_time(stop.id, Utility.get_current_date_str(),
+                                        Utility.get_now_plus_deltamins(int(deltamins)),
+                                        Utility.get_now_plus_deltamins(int(deltamins) + short_time_increment))
     return arrivals
 
 async def show_arrivals(message, stop, delta_minutes, should_edit_latest_message):
@@ -2349,7 +2442,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         search_res = search_db_for(text)
     print(len(search_res))
 
-    await display_search_results(update, text, search_res)
+    if "maps" in text:
+        link = Utility.extract_link_from_text(text)
+        lat, lon = Utility.get_coordinates_from_google_maps_link(link)
+        await update.get_bot().send_location(user_id, lat, lon)
+        stops_at_loc_button = InlineKeyboardButton(f"fermate vicine",
+                                                   callback_data=f"stopsAtLatLonRadius{callback_main_divider}{lat}{callback_arg_divider}{lon}{callback_arg_divider}{default_search_radius}")
+        to_loc_button = InlineKeyboardButton(f"viaggia fino a qui",
+                                             callback_data=f"toLocation{callback_main_divider}{lat}{callback_arg_divider}{lon}")
+        keyboard = InlineKeyboardMarkup([[stops_at_loc_button, to_loc_button]])
+        await update.get_bot().sendMessage(chat_id=user_id, text='cosa vuoi fare con questa posizione?', reply_markup=keyboard)
+        # lat, lon = Utility.get_coordinates_from_google_maps_link(link)
+        # await update.get_bot().sendLocation(chat_id=user_id, latitude=lat, longitude=lon)
+    else:
+        await display_search_results(update, text, search_res)
 
     # print('Bot:', response)
     # if len(responses) == 1:

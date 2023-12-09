@@ -4,6 +4,7 @@ import os
 import pickle
 import re
 import sqlite3
+from urllib.parse import urlparse, parse_qs
 
 import pytz
 
@@ -13,6 +14,8 @@ import string
 from datetime import date, datetime, timedelta
 import math
 from math import radians, cos, sin, asin, sqrt
+import http.client
+import urllib.parse
 
 
 class Utility:
@@ -311,18 +314,60 @@ class Utility:
 
         conn.commit()
         conn.close()
+    @staticmethod
+    def get_coordinates_from_google_maps_link(google_maps_link):
+        # Analizza il link di Google Maps
+        long_url = Utility.unshorten_url(google_maps_link)
+        match = re.search(r'!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)', long_url)
+
+        if match:
+            latitudine = float(match.group(1))
+            longitudine = float(match.group(2))
+            print("Latitudine:", latitudine)
+            print("Longitudine:", longitudine)
+            return latitudine, longitudine
+        else:
+            print("Coordinate non trovate nell'URL.")
+
+    @staticmethod
+    def unshorten_url(url):
+        parsed = urlparse(url)
+        print(parsed)
+        h = http.client.HTTPSConnection(parsed.netloc)
+        resource = parsed.path
+        print(resource)
+        if parsed.query != "":
+            resource += "?" + parsed.query
+        h.request('HEAD', resource)
+        response = h.getresponse()
+        return response.getheader('Location')
+
+    @staticmethod
+    def extract_link_from_text(text):
+        # Definisci un modello di espressione regolare per cercare un link
+        link_pattern = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+')
+
+        # Cerca il link nel testo
+        match = re.search(link_pattern, text)
+
+        # Se trovi il link, restituiscilo
+        if match:
+            return match.group()
+        else:
+            return None
 
     @staticmethod
     def get_now_plus_deltamins(delta):
         current_time = Utility.get_now_at_timezone()
         delta_minutes = timedelta(minutes=delta)
         new_time = current_time + delta_minutes
-        print(new_time.strftime('%H:%M:%S'))
+        # print(new_time.strftime('%H:%M:%S'))
         return new_time.strftime('%H:%M:%S')
 
     @staticmethod
     def now():
-        return Utility.get_now_at_timezone()
+        now = Utility.get_now_at_timezone()
+        return now.strftime('%H:%M:%S')
 
     @staticmethod
     def get_now_at_timezone():
