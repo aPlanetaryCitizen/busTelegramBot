@@ -2439,23 +2439,23 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if message_type == 'group':
         return
     else:
-        search_res = search_db_for(text)
-    print(len(search_res))
 
-    if "maps" in text:
-        link = Utility.extract_link_from_text(text)
-        lat, lon = Utility.get_coordinates_from_google_maps_link(link)
-        await update.get_bot().send_location(user_id, lat, lon)
-        stops_at_loc_button = InlineKeyboardButton(f"fermate vicine",
-                                                   callback_data=f"stopsAtLatLonRadius{callback_main_divider}{lat}{callback_arg_divider}{lon}{callback_arg_divider}{default_search_radius}")
-        to_loc_button = InlineKeyboardButton(f"viaggia fino a qui",
-                                             callback_data=f"toLocation{callback_main_divider}{lat}{callback_arg_divider}{lon}")
-        keyboard = InlineKeyboardMarkup([[stops_at_loc_button, to_loc_button]])
-        await update.get_bot().sendMessage(chat_id=user_id, text='cosa vuoi fare con questa posizione?', reply_markup=keyboard)
-        # lat, lon = Utility.get_coordinates_from_google_maps_link(link)
-        # await update.get_bot().sendLocation(chat_id=user_id, latitude=lat, longitude=lon)
-    else:
-        await display_search_results(update, text, search_res)
+        if "maps" in text:
+            await update.message.delete()
+            link = Utility.extract_link_from_text(text)
+            lat, lon = Utility.get_coordinates_from_google_maps_link(link)
+            await update.get_bot().send_location(user_id, lat, lon)
+            stops_at_loc_button = InlineKeyboardButton(f"fermate vicine",
+                                                       callback_data=f"stopsAtLatLonRadius{callback_main_divider}{lat}{callback_arg_divider}{lon}{callback_arg_divider}{default_search_radius}")
+            to_loc_button = InlineKeyboardButton(f"viaggia fino a qui",
+                                                 callback_data=f"toLocation{callback_main_divider}{lat}{callback_arg_divider}{lon}")
+            keyboard = InlineKeyboardMarkup([[stops_at_loc_button, to_loc_button]])
+            await update.get_bot().sendMessage(chat_id=user_id, text='cosa vuoi fare con questa posizione?', reply_markup=keyboard)
+            # lat, lon = Utility.get_coordinates_from_google_maps_link(link)
+            # await update.get_bot().sendLocation(chat_id=user_id, latitude=lat, longitude=lon)
+        else:
+            search_res = search_db_for(text)
+            await display_search_results(update, text, search_res)
 
     # print('Bot:', response)
     # if len(responses) == 1:
