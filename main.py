@@ -35,7 +35,7 @@ from flask import Flask, request
 TOKEN: Final = '6239455143:AAEfAT9erm_VVUcK8Pu18RFILHOlAHdfji0'
 BOT_USERNAME: Final = '@sienaBus_bot'
 default_time_range = 50
-short_time_increment = 5
+short_time_increment = 10
 default_search_radius = 100
 default_search_radius_increment = 100
 default_num_of_stops_to_show_on_search = 5
@@ -1477,7 +1477,9 @@ def arrivals_by_stop_date_time(stop_id, date, start_time, end_time):
     arrivals = []
     trips_dict = db_results['trips']
     for t in trips_dict:
-        arrivals.append(Arrival(stop_id, t['time'], t['trip_code']))
+        arr = Arrival(stop_id, t['time'], t['trip_code'])
+        print(ricerca_trip_per_id(arr.trip_id).to_text())
+        arrivals.append(arr)
     return arrivals
 
 def new_button(text, query_descr, query_args):
@@ -1562,7 +1564,7 @@ def ricerca_trip_per_id(id):
     cursor = conn.cursor()
 
     # Cerca nella tabella "stops"
-    cursor.execute('SELECT * FROM trips WHERE id = ?', (id,))
+    cursor.execute('SELECT * FROM trips WHERE code = ?', (id,))
     result = cursor.fetchone()
 
     if result:
@@ -1573,7 +1575,7 @@ def ricerca_trip_per_id(id):
         trip.headsign = result[3]
         trip.service_id = result[4]
 
-        return
+        return trip
 
 def basic_trip_by_code(trip_code):
     conn = sqlite3.connect('bot.db')
@@ -1982,7 +1984,7 @@ async def arrivals_near_user_deltamins(update, message, deltamins, should_edit):
                 results.append((stop, arrivals))
                 # await update.message.reply_text(get_stop_arrivals_text_now(stop))
         final_message = ''
-        final_message += f"Bus in arrivo qui, alle {Utility.get_now_plus_deltamins(int(deltamins))[:-3]}\n"
+        final_message += f"Bus in arrivo vicino a te, alle {Utility.get_now_plus_deltamins(int(deltamins))[:-3]}\n\n"
         if len(results) <= 0:
             rand = random.randint(1, 3)
             if rand == 1:
@@ -2445,8 +2447,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             link = Utility.extract_link_from_text(text)
             lat, lon = Utility.get_coordinates_from_google_maps_link(link)
             await update.get_bot().send_location(user_id, lat, lon)
-            stops_at_loc_button = InlineKeyboardButton(f"fermate vicine",
-                                                       callback_data=f"stopsAtLatLonRadius{callback_main_divider}{lat}{callback_arg_divider}{lon}{callback_arg_divider}{default_search_radius}")
+            stops_at_loc_button = new_button(f"fermate vicine", [f"stopsAtLatLonRadius"], [lat, lon, default_search_radius])
             to_loc_button = InlineKeyboardButton(f"viaggia fino a qui",
                                                  callback_data=f"toLocation{callback_main_divider}{lat}{callback_arg_divider}{lon}")
             keyboard = InlineKeyboardMarkup([[stops_at_loc_button, to_loc_button]])
