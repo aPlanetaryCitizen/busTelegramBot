@@ -1,3 +1,0 @@
-route_id,agency_id,route_short_name,route_long_name,route_type,route_color,route_text_color
-"1034457352","888-98","SFS","Servizi Integrativi Trenitalia","3","05A9C7","000000"
-"1445720679","888-98","SFT","Servizi Integrativi Trasporto Ferroviario Toscano","3","05A9C7","000000"

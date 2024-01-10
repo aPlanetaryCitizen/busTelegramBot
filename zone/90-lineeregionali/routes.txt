@@ -1,0 +1,11 @@
+route_id,agency_id,route_short_name,route_long_name,route_type,route_color,route_text_color
+"1010209697","888-90","131R","Siena-/Poggibonsi Salceto/-Firenze","3","05A9C7","000000"
+"108044245","888-90","51G","Grosseto - Siena","3","05A9C7","000000"
+"1123823127","888-90","DD","Firenze-A11-Lucca","3","05A9C7","000000"
+"1138660693","888-90","131","Siena-Colle-Poggibonsi-Firenze","3","05A9C7","000000"
+"1153099371","888-90","R03","Firenze-A11-Montecatini","3","05A9C7","000000"
+"1155721969","888-90","50G","Grosseto - Firenze","3","05A9C7","000000"
+"1262010893","888-90","R1","Prato - Firenze","3","05A9C7","000000"
+"1424551286","888-90","138","Siena-Ambra-Monte S.Savino-Arezzo","3","05A9C7","000000"
+"3266181741","888-90","R04","Firenze-A11-Pistoia","3","05A9C7","000000"
+"3453180771","888-90","200","Elba Link (Piombino Porto - Campiglia Fs)","3","FFFFFF","000000"

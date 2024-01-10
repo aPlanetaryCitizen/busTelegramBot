@@ -1,5 +1,0 @@
-route_id,agency_id,route_short_name,route_long_name,route_type,route_color,route_text_color
-"1195655320","888-76","SG1","City Bus","3","D86018","000000"
-"1650568118","888-76","SG3","San Gimignano - Castello","3","D86018","000000"
-"1906412204","888-76","SGN","Urbano San Gimignano","3","D86018","000000"
-"2370413144","888-76","SG2","Urbano San Gimignano","3","D86018","000000"

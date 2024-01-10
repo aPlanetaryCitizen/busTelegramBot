@@ -1390,6 +1390,9 @@ def get_buttonKeyboard_from_reply_markup(reply_markup):
 
 
 def ricerca_trip_per_fermata_data_tempo(stop_id, date, start_time, end_time):
+
+    print(f"{date}  {start_time}  {end_time}")
+
     conn = sqlite3.connect('bot.db')
     cursor = conn.cursor()
 
@@ -1437,15 +1440,34 @@ def ricerca_trip_per_fermata_data_tempo(stop_id, date, start_time, end_time):
             INNER JOIN trip_dates ON trips.code = trip_dates.trip_id
             INNER JOIN trip_stops_times ON trips.code = trip_stops_times.trip_id
             INNER JOIN stops ON trip_stops_times.stop_id = stops.id
-            WHERE trip_dates.date = ? 
-            AND trip_stops_times.stop_id = ? 
+            WHERE trip_dates.date = ?
+            AND trip_stops_times.stop_id = ?
             AND trip_stops_times.time BETWEEN ? AND ?
             ORDER BY trip_stops_times.time
         ''', (date, stop_id, start_time, end_time))
 
         results = cursor.fetchall()
 
+
+
+
+
+
+        # print(f"'{stop_id}'")
+        # cursor.execute('''
+        #     SELECT trips.code, trips.line, trips.headsign, trip_stops_times.time, stops.name, trip_stops_times.stop_id
+        #     FROM trips
+        #     INNER JOIN trip_dates ON trips.code = trip_dates.trip_id
+        #     INNER JOIN trip_stops_times ON trips.code = trip_stops_times.trip_id
+        #     INNER JOIN stops ON trip_stops_times.stop_id = stops.id
+        #     WHERE trip_dates.date = ?
+        #     ORDER BY trip_stops_times.time
+        # ''', (date,))
+
+
     conn.close()
+    print(f"{date}  {stop_id}  {start_time}  {end_time}")
+    print(len(results))
 
     # Creazione del dizionario dei risultati
     results_dict = {
@@ -1474,6 +1496,8 @@ def ricerca_trip_per_fermata_data_tempo(stop_id, date, start_time, end_time):
         results_dict['stop_id'] = stop_id
         results_dict['start_time'] = start_time
         results_dict['end_time'] = end_time
+
+    # print(results_dict)
 
     return results_dict
 
@@ -2391,6 +2415,7 @@ def arrivals_by_stop_deltamins(stop, deltamins):
 
 
 async def show_arrivals(message, stop, delta_minutes, should_edit_latest_message):
+    print (f"\n\nDATA: {Utility.get_current_date_str()}\nNOW: {Utility.get_now_plus_deltamins(0)}\n\n")
     if should_edit_latest_message:
         arrivi_text = format_trip_results(ricerca_trip_per_fermata_data_tempo(stop.id, Utility.get_current_date_str(),
                                                                               Utility.get_now_plus_deltamins(
@@ -2764,6 +2789,10 @@ def main():
         start()
     if not os.path.isfile('userData.db'):
         build_user_data_db()
+    # conn = sqlite3.connect('bot.db')  # Crea o connettiti a un database esistente
+    # cursor = conn.cursor()
+    # cursor.execute('UPDATE trip_dates SET date = REPLACE(date, "2023", "2024")')
+    # conn.commit()
 
     app.add_handler(CommandHandler('start', start_command))
     app.add_handler(CommandHandler('help', help_command))
